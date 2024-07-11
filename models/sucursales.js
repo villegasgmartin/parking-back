@@ -27,7 +27,10 @@ const UserSchema = Schema({
     },
     correo:{
         type: String,
-    }
+    },
+    empleados: [
+        { type: Schema.Types.ObjectId, ref: 'Empleado' }
+    ]
     
 })
 

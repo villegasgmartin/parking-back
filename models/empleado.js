@@ -26,8 +26,9 @@ const UserSchema = Schema({
         default: true,
       
     },
-    sucursal:{
-        type: String,
+    sucursal: {
+        type: Schema.Types.ObjectId,
+        ref: 'Sucursal',
         required: true
     },
     historial:{

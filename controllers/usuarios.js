@@ -4,7 +4,8 @@ const bcryptjs = require('bcryptjs');
 
 //modelos de usuario
 const Empleado = require('../models/empleado')
-const Admin = require('../models/usuarioAdmin')
+const Admin = require('../models/usuarioAdmin');
+const Sucursal = require('../models/sucursales');
 
 const usuariosGetTotal = async(req = request, res = response) => {
     const { limite = 5, desde = 0 } = req.query;
@@ -32,22 +33,6 @@ const usuariosGetTotal = async(req = request, res = response) => {
         } else {
             skip -= totalUsuarios;
         }
-
-        // // Obtener los usuarios de User_Comprador si aún queda límite
-        // if (limit > 0 && skip < totalComprador) {
-        //     const usuariosComprador = await User_Comprador.find(query).skip(skip).limit(limit).exec();
-        //     usuarios = usuarios.concat(usuariosComprador);
-        //     limit -= usuariosComprador.length;
-        //     skip = 0;
-        // } else {
-        //     skip -= totalComprador;
-        // }
-
-        // // Obtener los usuarios de User_Vendedor si aún queda límite
-        // if (limit > 0) {
-        //     const usuariosVendedor = await User_Vendedor.find(query).skip(skip).limit(limit).exec();
-        //     usuarios = usuarios.concat(usuariosVendedor);
-        // }
 
         res.json({
             total,
@@ -84,23 +69,42 @@ const getUsuario = async (req, res) => {
 
 
 const usuariosPost = async (req, res = response) => {
+    try {
+        let { password, ...resto } = req.body;
+        const sucursalId = req.query.sucursal;
+
+        // Crear el empleado
+        const usuario = new Empleado({ password, ...resto, sucursal: sucursalId });
+
+        // Encriptar la contraseña
+        const salt = bcryptjs.genSaltSync();
+        usuario.password = bcryptjs.hashSync(password, salt);
+
+        // Guardar el empleado en la base de datos
+        await usuario.save();
+
+        // Agregar el ID del empleado a la sucursal correspondiente
+        const sucursal = await Sucursal.findById(sucursalId);
+        if (!sucursal) {
+            return res.status(404).json({
+                msg: 'Sucursal no encontrada'
+            });
+        }
         
-    let {password, ...resto} = req.body;
-    const sucursal = req.query.sucursal;
+        
 
-    const usuario = new Empleado({password, ...resto, sucursal});
+        sucursal.empleados.push(usuario._id);
+        await sucursal.save();
 
-    // Encriptar la contraseña
-    const salt = bcryptjs.genSaltSync();
-    usuario.password = bcryptjs.hashSync( password, salt );
-
-    await usuario.save()
-
-    res.json({
-       
-        usuario
-     
-    });
+        res.json({
+            usuario
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
 }
 const AdminPost = async (req, res = response) => {
         
