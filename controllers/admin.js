@@ -10,7 +10,7 @@ cloudinary.config(process.env.CLOUDINARY_URL);
 const Empleado = require('../models/empleado')
 const Admin = require('../models/usuarioAdmin')
 const Sucursal = require('../models/sucursales')
-const Entrada = require('../models/In&out');
+const Entrada = require('../models/in&out');
 const calculateRoundedHours = require('../helpers/diferenciaHoras');
 
 
