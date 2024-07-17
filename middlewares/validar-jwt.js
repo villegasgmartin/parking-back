@@ -6,15 +6,36 @@ const Empleado = require('../models/empleado')
 const Admin = require('../models/usuarioAdmin')
 
 
+// Simulando una lista negra de tokens revocados
+const revokedTokens = new Set();
+
+// Ruta para eliminar el token en el logout
+const logout = (req, res) => {
+	const token = req.header('x-token').split(' ')[1]; // Obtener el token del encabezado
+
+	// Agregar el token a la lista negra
+	revokedTokens.add(token);
+
+	// Respondemos con éxito al usuario
+	res.status(200).json({ message: 'Logged out successfully' });
+};
+
+
 
 const validarJWT = async( req = request, res = response, next ) => {
 
     const token = req.header('x-token');
 
     if ( !token ) {
-        return res.status(401).json({
-            msg: 'No hay token en la petición'
-        });
+        return res.redirect('/');
+    }
+
+    const tokenListaNegra = req.header('x-token').split(' ')[1];
+
+    // Verificar si el token está en la lista negra
+    if (revokedTokens.has(tokenListaNegra)) {
+        console.log('token en lista negra');
+        return res.redirect('/');
     }
 
     try {
@@ -59,5 +80,6 @@ const validarJWT = async( req = request, res = response, next ) => {
 
 
 module.exports = {
-    validarJWT
+    validarJWT,
+    logout
 }
