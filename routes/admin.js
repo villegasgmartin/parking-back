@@ -9,7 +9,7 @@ const {
     tieneRole
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado } = require('../controllers/admin');
 
 
 const router = Router();
@@ -23,6 +23,56 @@ router.get('/sucursales',[
     validarJWT,
     validarCampos
 ],getSucursales );
+
+router.get('/reservas-sucursal',[
+    validarJWT,
+    validarCampos
+],obtenerReservasAdmin );
+
+router.get('/abonados-sucursal',[
+    validarJWT,
+    validarCampos
+],obtenerAbonadoporAdmin );
+
+router.post('/nuevo-vehiculo',[
+    validarJWT,
+    validarCampos
+],CrearVehiculo );
+
+router.delete('/borrar-vehiculo',[
+    validarJWT,
+    validarCampos
+],borrarVehiculo );
+
+router.get('/registros-sucursal',[
+    validarJWT,
+    validarCampos
+],getRegistros );
+
+router.post('/nuevo-comunicado',[
+    validarJWT,
+    validarCampos
+], CrearComunicado);
+
+router.delete('/borrar-comunicado',[
+    validarJWT,
+    validarCampos
+], borrarComunicado);
+
+router.get('/comunicados',[
+    validarJWT,
+    validarCampos
+], VerComunicado);
+
+router.get('/convenios',[
+    validarJWT,
+    validarCampos
+], obtenerConvenio);
+
+router.post('/nuevo-convenio',[
+    validarJWT,
+    validarCampos
+], crearConvenio);
 
 
 

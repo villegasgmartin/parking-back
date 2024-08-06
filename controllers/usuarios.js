@@ -1,11 +1,16 @@
 const { response, request } = require('express');
 const bcryptjs = require('bcryptjs');
 
-
+const cloudinary = require('cloudinary').v2;
+cloudinary.config(process.env.CLOUDINARY_URL);
 //modelos de usuario
 const Empleado = require('../models/empleado')
 const Admin = require('../models/usuarioAdmin');
 const Sucursal = require('../models/sucursales');
+const Reserva = require('../models/reservas');
+const Abonado = require('../models/abonado');
+const Gasto = require('../models/gasto');
+const Convenio = require('../models/convenio');
 
 const usuariosGetTotal = async(req = request, res = response) => {
     const { limite = 5, desde = 0 } = req.query;
@@ -190,6 +195,191 @@ const usuariosDelete = async(req, res = response) => {
     } );
 }
 
+//crear reservas
+
+const crearReserva = async(req, res) => {
+    const {empleado, sucursal, ...body } = req.body;
+    const sucursalId = req.query.sucursal;
+    
+
+    const uid = req.uid
+    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+    if(!usuarioAdmin){
+        return res.status(404).json({
+            msg:'debe ser admin para crear reservas'
+        })
+    }
+
+    const trabajador = await Empleado.findById(uid)
+    if(trabajador){
+        if(!trabajador.reservas){
+            return res.status(404).json({
+                msg:'debe estar habilitado para crear reserva'
+            });  
+        }
+    }
+
+    const reserva = new Reserva({...body, empleados:uid, sucursal:sucursalId})
+
+    await reserva.save();
+    
+    res.json({reserva,
+        msg:'reserva creada'
+    } );
+}
+
+//obtener las reservas solo para ese empleado
+const obtenerReservasporUsuario = async (req, res) =>{
+    const sucursalId = req.query.sucursal;
+    const uid = req.uid
+
+    const query = {empleados: uid, sucursal: sucursalId}
+    const usuario = await Empleado.findById(uid);
+
+    console.log(query);
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe tener permiso para ver reservas'
+        })
+    }
+    try {
+        console.log(query);
+        const reservas = await Reserva.find(query);
+        res.json(reservas);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
+
+    
+//crear Abonado
+
+const crearAbonado = async(req, res) => {
+    const { empleado, sucursal , ...body} = req.body;
+    const sucursalId = req.query.sucursal;
+    
+
+    const uid = req.uid
+    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+    if(!usuarioAdmin){
+        return res.status(404).json({
+            msg:'debe ser admin para crear abonado'
+        })
+    }
+
+    const trabajador = await Empleado.findById(uid)
+    if(trabajador){
+        if(!trabajador.abonados){
+            return res.status(404).json({
+                msg:'debe estar habilitado para crear abonado'
+            });  
+        }
+    }
+
+    const abonado = new Abonado({...body, empleados:uid, sucursal:sucursalId})
+
+    await abonado.save();
+    
+    res.json({abonado,
+        msg:'abonado creado'
+    } );
+}
+
+//obtener los abonados solo para ese empleado
+const obtenerAbonadoporUsuario = async (req, res) =>{
+    const sucursalId = req.query.sucursal;
+    const uid = req.uid
+
+    const query = {empleados: uid, sucursal: sucursalId}
+    const usuario = await Empleado.findById(uid);
+
+ 
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe tener permiso para ver reservas'
+        })
+    }
+    try {
+        const abonados = await Abonado.find(query);
+        res.json(abonados);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
+
+//crear Gasto
+
+const crearGasto = async(req, res) => {
+    const {empleado, sucursal, ...body } = req.body;
+    const sucursalId = req.query.sucursal;
+    console.log(body)
+
+    const uid = req.uid
+    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+    if(!usuarioAdmin){
+        return res.status(404).json({
+            msg:'debe ser admin para crear abonado'
+        })
+    }
+
+    const trabajador = await Empleado.findById(uid)
+    if(trabajador){
+        if(!trabajador.saldos){
+            return res.status(404).json({
+                msg:'debe estar habilitado para crear abonado'
+            });  
+        }
+    }
+
+    
+    //agrego imagen si es que hay
+    if (req.files) {
+		const { tempFilePath } = req.files.img;
+
+		const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+
+		imgEntrada = secure_url;
+	} else {
+		imgEntrada =
+			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1695818870/samples/placeholder_profile_jhvdpv.png';
+	}
+
+    const gasto = new Gasto({ ...body, empleados:uid, sucursal:sucursalId, img:imgEntrada })
+
+    await gasto.save();
+    
+    res.json({gasto,
+        msg:'abonado creado'
+    } );
+}
+
+//obtener los gastos solo para ese empleado
+const obtenerGastoporUsuario = async (req, res) =>{
+    const sucursalId = req.query.sucursal;
+    const uid = req.uid
+
+    const query = {empleados: uid, sucursal: sucursalId}
+    const usuario = await Empleado.findById(uid);
+
+ 
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe tener permiso para ver reservas'
+        })
+    }
+    try {
+        const gastos = await Gasto.find(query);
+        res.json(gastos);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
 
 
 
@@ -199,5 +389,11 @@ module.exports = {
     usuariosDelete,
     usuariosPut,
     AdminPost,
-    getUsuario
+    getUsuario,
+    crearReserva,
+    obtenerReservasporUsuario,
+    obtenerAbonadoporUsuario,
+    crearAbonado,
+    obtenerGastoporUsuario,
+    crearGasto
 }

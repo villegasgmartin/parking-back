@@ -20,7 +20,13 @@ const {  usuariosGetTotal,
         usuariosDelete,
         usuariosPut,
         AdminPost,
-        getUsuario} = require('../controllers/usuarios');
+        getUsuario,
+        crearReserva,
+        obtenerReservasporUsuario,
+        crearAbonado,
+        obtenerAbonadoporUsuario,
+        crearGasto,
+        obtenerGastoporUsuario} = require('../controllers/usuarios');
 
 const router = Router();
 
@@ -92,9 +98,46 @@ router.get('/perfil',[
     validarCampos
 ],getUsuario );
 
+//rutas de funcionalidades
+
+router.post('/nueva-reserva', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+   
+    validarCampos
+], crearReserva)
+
+router.get('/reservas-usuario', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+  
+    validarCampos
+], obtenerReservasporUsuario)
 
 
+router.post('/nuevo-abonado', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+    validarCampos
+], crearAbonado)
 
+router.get('/abonados-usuario', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+    validarCampos
+], obtenerAbonadoporUsuario)
+
+router.post('/nuevo-gasto', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+    validarCampos
+], crearGasto)
+
+router.get('/gastos-usuario', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+    validarCampos
+], obtenerGastoporUsuario)
 
 
 
