@@ -28,7 +28,14 @@ class Server {
     middlewares() {
 
         // CORS
-        this.app.use( cors() );
+        this.app.use(cors({
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+          }));
+
+        // Manejo de solicitudes preflight
+        this.app.options('*', cors());
 
         // Lectura y parseo del body
         this.app.use( express.json() );
