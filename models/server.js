@@ -28,11 +28,14 @@ class Server {
     middlewares() {
 
         // CORS
+
+        const allowedOrigins = [' http://127.0.0.1:5173', 'https://parking-front-wheat.vercel.app'];
+
         this.app.use(cors({
-            origin: '*',
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
-          }));
+            origin: allowedOrigins,
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            credentials: true,
+        }));
 
         // Manejo de solicitudes preflight
         this.app.options('*', cors());
