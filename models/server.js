@@ -29,16 +29,9 @@ class Server {
 
         // CORS
 
-        const allowedOrigins = [' http://127.0.0.1:5173', 'https://parking-front-wheat.vercel.app'];
 
-        this.app.use(cors({
-            origin: allowedOrigins,
-            methods: ['GET', 'POST', 'PUT', 'DELETE'],
-            credentials: true,
-        }));
+        this.app.use(cors());
 
-        // Manejo de solicitudes preflight
-        this.app.options('*', cors());
 
         // Lectura y parseo del body
         this.app.use( express.json() );
