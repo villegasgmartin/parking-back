@@ -419,6 +419,39 @@ const obtenerConvenio = async (req, res) =>{
     }
 }
 
+const borrarAbonado = async (req, res) =>{
+    const abonado = req.query.abonado
+
+    try {
+        const result = await Abonado.deleteOne({ _id:abonado }).exec();
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ msg: 'abonado no encontrado' });
+        }
+        res.json({
+            msg: 'abonado eliminado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
+
+const borrarReserva = async (req, res) =>{
+    const reserva = req.query.reserva
+
+    try {
+        const result = await Reserva.deleteOne({ _id:reserva }).exec();
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ msg: 'reserva no encontrado' });
+        }
+        res.json({
+            msg: 'reserva eliminado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
 
 module.exports = {
     getSucursales,
@@ -434,6 +467,8 @@ module.exports = {
     borrarComunicado,
     obtenerConvenio,
     crearConvenio,
-    VerComunicado
+    VerComunicado,
+    borrarAbonado,
+    borrarReserva
 }
 

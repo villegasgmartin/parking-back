@@ -11,8 +11,7 @@ const UserSchema = new Schema({
         required: [true, 'La fecha de ingreso es requerida']
     },
     NumeroTramite: {
-        type: Number,
-        required: [true, 'El NumeroTramite es requerida']
+        type: Number
     },
     Correo: {
         type: Number,
