@@ -1,5 +1,8 @@
 const { response, request } = require('express');
 const bcryptjs = require('bcryptjs');
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+
 
 
 const cloudinary = require('cloudinary').v2;
@@ -215,6 +218,8 @@ const obtenerAbonadoporAdmin = async (req, res) =>{
     const sucursalId = req.query.sucursal;
     const uid = req.uid
 
+    
+
     const query = {sucursal: sucursalId}
     const usuario = await Admin.findById(uid);
 
@@ -423,7 +428,7 @@ const borrarAbonado = async (req, res) =>{
     const abonado = req.query.abonado
 
     try {
-        const result = await Abonado.deleteOne({ _id:abonado }).exec();
+        const result = await Abonado.deleteOne({ _id:new mongoose.Types.ObjectId(abonado) }).exec();
         if (result.deletedCount === 0) {
             return res.status(404).json({ msg: 'abonado no encontrado' });
         }
@@ -440,7 +445,7 @@ const borrarReserva = async (req, res) =>{
     const reserva = req.query.reserva
 
     try {
-        const result = await Reserva.deleteOne({ _id:reserva }).exec();
+        const result = await Reserva.deleteOne({ _id:new mongoose.Types.ObjectId(reserva) }).exec();
         if (result.deletedCount === 0) {
             return res.status(404).json({ msg: 'reserva no encontrado' });
         }

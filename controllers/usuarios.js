@@ -1,6 +1,6 @@
 const { response, request } = require('express');
 const bcryptjs = require('bcryptjs');
-
+const { v4: uuidv4 } = require('uuid');
 const cloudinary = require('cloudinary').v2;
 cloudinary.config(process.env.CLOUDINARY_URL);
 //modelos de usuario
@@ -257,9 +257,9 @@ const obtenerReservasporUsuario = async (req, res) =>{
 //crear Abonado
 
 const crearAbonado = async(req, res) => {
-    const { empleado, sucursal , ...body} = req.body;
+    let { empleado, sucursal , NumeroTramite, ...body} = req.body;
     const sucursalId = req.query.sucursal;
-    
+    NumeroTramite = uuidv4();
 
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
@@ -278,7 +278,7 @@ const crearAbonado = async(req, res) => {
         }
     }
 
-    const abonado = new Abonado({...body, empleados:uid, sucursal:sucursalId})
+    const abonado = new Abonado({...body, empleados:uid, sucursal:sucursalId, NumeroTramite})
 
     await abonado.save();
     
