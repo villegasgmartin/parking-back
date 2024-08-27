@@ -13,32 +13,41 @@ const revokedTokens = new Set();
 const logout = async (req, res) => {
     try {
         const token = req.header('x-token').split(' ')[0]; // Obtener el token del encabezado
+        
+        const uid = req.uid
+        
+       //conprobar si el usuario es un admin o empleado
+       const usuarioAdmin = await Admin.findById(uid);
 
-        // Decodificar el token para obtener el ID del usuario (esto depende de cómo codificaste tu token)
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Asegúrate de tener tu JWT_SECRET configurado
-        const userId = decoded.id;
+       if(!usuarioAdmin) {
 
-        // Obtener la hora actual para la HoraSalida
-        const now = new Date();
-        const time = now.toTimeString().split(' ')[0];
+            // Obtener la hora actual para la HoraSalida
+            const now = new Date();
+            const date = now.toISOString().split('T')[0]; // Obtener la fecha en formato YYYY-MM-DD
+            const time = now.toTimeString().split(' ')[0]; // Obtener la hora en formato HH:MM:SS
+            
+            // Combinar la fecha y la hora en un objeto Date
+            const fechaHoraSalida = new Date(`${date}T${time}Z`);
 
-        // Encontrar el registro más reciente del empleado donde HoraSalida esté vacío
-        const registro = await Registro.findOneAndUpdate(
-            { empleados: userId, HoraSalida: null },
-            { HoraSalida: time },
-            { new: true }
-        );
+            // Encontrar el registro más reciente del empleado donde HoraSalida esté vacío
+            const registro = await Registro.findOneAndUpdate(
+                { empleados: uid, HoraSalida: null },
+                { HoraSalida: time, fechaSalida:date },
+                { new: true }
+            );
 
-        if (!registro) {
-            return res.status(404).json({ message: 'Registro no encontrado' });
-        }
+            if (!registro) {
+                return res.status(404).json({ message: 'Registro no encontrado' });
+            }
+
+    }
 
         // Agregar el token a la lista negra
         revokedTokens.add(token);
         console.log('Tokens revocados:', [...revokedTokens]);
 
         // Respondemos con éxito al usuario
-        res.status(200).json({ message: 'Logged out successfully' });
+        res.status(200).json({ message: 'Saliste de la sesion' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al cerrar sesión' });

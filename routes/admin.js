@@ -9,7 +9,7 @@ const {
     tieneRole
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo } = require('../controllers/admin');
 
 
 const router = Router();
@@ -84,6 +84,10 @@ router.delete('/borrar-reserva',[
     validarCampos
 ], borrarReserva);
 
+router.get('/get-vehiculos',[
+    validarJWT,
+    validarCampos
+] ,getVehiculo)
 
 
 module.exports = router;

@@ -2,16 +2,19 @@
 const {Schema, model } = require('mongoose');
 
 const UserSchema = new Schema({
-    fecha: {
+    fechaEntrada: {
         type: Date,
         required: [true, 'El fecha es requerido']
     },
     HoraEntrada: {
-        type: Date,
+        type: String,
         required: [true, 'La fecha de ingreso es requerida']
     },
-    HoraSalida: {
+    fechaSalida: {
         type: Date,
+    },
+    HoraSalida: {
+        type: String,
     },
     Nombre: {
         type: String,
@@ -22,7 +25,10 @@ const UserSchema = new Schema({
     ],
     sucursal: [
         { type: Schema.Types.ObjectId, ref: 'Sucursal' }
-    ]
+    ],
+    NombreSucursal:{
+        type: String
+    }
 });
 
 

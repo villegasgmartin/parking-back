@@ -31,7 +31,10 @@ const {  usuariosGetTotal,
 const router = Router();
 
 
-router.get('/usuarios', usuariosGetTotal );
+router.get('/usuarios',
+    validarJWT,
+    validarCampos
+    , usuariosGetTotal );
 
 
 
@@ -49,6 +52,7 @@ check('password', 'El password debe de ser más de 6 letras').isLength({ min: 6 
 check('correo', 'El correo no es válido').isEmail(),
 check('correo').custom( emailExiste ),
 check('rol').custom( esRoleValido ), 
+validarJWT,
 validarCampos
 ,usuariosPost );
 

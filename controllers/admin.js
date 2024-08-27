@@ -267,6 +267,27 @@ const CrearVehiculo = async (req, res = response) => {
    
 }
 
+const getVehiculo = async (req, res) => {
+    const uid = req.uid
+
+    const usuario = await Admin.findById(uid);
+
+ 
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe tener permiso para ver vehiculos'
+        })
+    }
+    try {
+        const vehiculos = await Vehiculo.find();
+        res.json(vehiculos);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
+
 //borrar vehiculo
 
 const borrarVehiculo = async (req, res) =>{
@@ -294,7 +315,7 @@ const getRegistros = async (req, res) =>{
 
     const query = {sucursal: sucursalId}
     const usuario = await Admin.findById(uid);
-
+    console.log(usuario, query)
  
     if(!usuario){
         return res.status(404).json({
@@ -302,8 +323,8 @@ const getRegistros = async (req, res) =>{
         })
     }
     try {
-        const registros = await Registro.find(query);
-        res.json(registros);
+        const registro = await Registro.find(query);
+        res.json(registro);
     } catch (error) {
         console.error(error);
         res.status(404).json({message: error.message});
@@ -474,6 +495,7 @@ module.exports = {
     crearConvenio,
     VerComunicado,
     borrarAbonado,
-    borrarReserva
+    borrarReserva, 
+    getVehiculo
 }
 

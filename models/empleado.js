@@ -15,7 +15,9 @@ const UserSchema = Schema({
         type: String,
         required: [true, 'La password es requerida']
     },
-    
+    telefono:{
+        type: Number,
+    },
     rol:{
         type: String,
         required: true,
@@ -30,6 +32,10 @@ const UserSchema = Schema({
         type: Schema.Types.ObjectId,
         ref: 'Sucursal',
         required: true
+    },
+    sucursalNombre:{
+        type: String,
+        required: [true, 'La sucursal es requerida']
     },
     historial:{
         type: Boolean,

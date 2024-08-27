@@ -78,8 +78,19 @@ const usuariosPost = async (req, res = response) => {
         let { password, ...resto } = req.body;
         const sucursalId = req.query.sucursal;
 
+
+         // Agregar el ID del empleado a la sucursal correspondiente
+         const sucursal = await Sucursal.findById(sucursalId);
+         if (!sucursal) {
+             return res.status(404).json({
+                 msg: 'Sucursal no encontrada'
+             });
+         }
+ 
+         const sucursalNombre = sucursal.nombre;
+
         // Crear el empleado
-        const usuario = new Empleado({ password, ...resto, sucursal: sucursalId });
+        const usuario = new Empleado({ password, ...resto, sucursal: sucursalId, sucursalNombre });
 
         // Encriptar la contraseña
         const salt = bcryptjs.genSaltSync();
@@ -88,13 +99,7 @@ const usuariosPost = async (req, res = response) => {
         // Guardar el empleado en la base de datos
         await usuario.save();
 
-        // Agregar el ID del empleado a la sucursal correspondiente
-        const sucursal = await Sucursal.findById(sucursalId);
-        if (!sucursal) {
-            return res.status(404).json({
-                msg: 'Sucursal no encontrada'
-            });
-        }
+       
         
         
 

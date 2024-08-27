@@ -6,7 +6,7 @@ const { validarCampos } = require('../middlewares/validar-campos');
 
 
 const { login } = require('../controllers/auth');
-const { logout } = require('../middlewares/validar-jwt');
+const { logout, validarJWT } = require('../middlewares/validar-jwt');
 
 
 const router = Router();
@@ -17,6 +17,9 @@ router.post('/login',[
     validarCampos
 ],login );
 
-router.get('/logout', logout);
+router.get('/logout',[
+    validarJWT,
+    validarCampos
+] ,logout);
 
 module.exports = router;
