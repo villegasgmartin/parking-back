@@ -19,6 +19,7 @@
     "express-fileupload": "^1.5.1",
     "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mercadopago": "^2.0.14",
     "mongoose": "^8.3.4",
     "uuid": "^10.0.0"
   }

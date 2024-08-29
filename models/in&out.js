@@ -7,23 +7,32 @@ const UserSchema = Schema({
         required: [true, 'El patente es requerido']
     },
     tipo:{
-        type: Number,
+        type: String,
         required: [true, 'El tipo de vehiculo es requerido'],
     },
     horaEntrada:{
         type: String,
+        required: [true, 'La horaEntrada de vehiculo es requerido'],
     },
-    fecha:{
-        type: String,      
+    fechaEntrada:{
+        type: Date, 
+        required: [true, 'La fechaEntrada de vehiculo es requerido'],     
     },
     horaSalida:{
         type: String,
+    },
+    fechaSalida:{
+        type: Date,   
     },
     tiempo: {
         type: Number
     },
     metodoPago:{
-        type: String,
+        type: Boolean,
+        default: false
+    },
+    qr:{
+      type:String  
     },
     total:{
         type: Number,

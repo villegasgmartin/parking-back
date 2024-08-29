@@ -21,6 +21,7 @@ const Vehiculo = require('../models/vehiculo');
 const Registro = require('../models/registro');
 const Comunicado = require('../models/comunicado');
 const Convenio = require('../models/convenio');
+const generarLinkDePago = require('../middlewares/mercado-pago');
 
 
 /**********Sucursales***********************/
@@ -75,7 +76,7 @@ const crearSucursal = async (req, res) =>{
 
 /*********************Ingresos y Egresos Autos**************/
 const ingresoAuto = async(req, res) => {
-    const {imgEntrada,fecha, horaEntrada, ...rest} = req.body;
+    let {imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
     const sucursalId = req.query.sucursal;
 
     const uid = req.uid
@@ -97,28 +98,26 @@ const ingresoAuto = async(req, res) => {
 		imgEntrada = secure_url;
 	} else {
 		imgEntrada =
-			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1695818870/samples/placeholder_profile_jhvdpv.png';
+			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
 	}
     
         // Obtener la fecha y hora actual
-        const now = new Date();
+        const fecha = new Date();
 
 
-        const month = now.getMonth() + 1; // Los meses en JavaScript van de 0 a 11
-        const year = now.getFullYear();
-
+   
         // Obtener la hora (hora, minutos, segundos)
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
+        const hours = fecha.getHours();
+        const minutes = fecha.getMinutes();
 
         // Formatear la fecha y la hora en cadenas
-        fecha = `${month} ${year}`;
+        // fecha = `${month} ${year}`;
         horaEntrada = `${hours}:${minutes}`;
 
     
 
     try {
-        const ingreso = new Entrada({imgEntrada,fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId})
+        const ingreso = new Entrada({imgEntrada,fechaEntrada:fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId})
         await ingreso.save();
         res.status(200).json(ingreso);
         
@@ -132,64 +131,84 @@ const ingresoAuto = async(req, res) => {
 
 }
 
-const SalidaAuto = async(req, res) => {
-    const {imgSalida,fecha,horaSalida, patente, ...rest} = req.body;
-    const query = {finalizado:false, patente:patente}
+const SalidaAuto = async (req, res) => {
+    let { imgSalida, horaSalida, patente, mercadoPago, ...rest } = req.body;
+    const query = { finalizado: false, patente: patente };
 
-
-    //sacar el horario de ingreso
-    const entrada = await Entrada.find(query)
+    // Obtener el registro de entrada
+    const entrada = await Entrada.findOne(query); // Cambiado a findOne para obtener un único registro
+    if (!mercadoPago) {
+        mercadoPago = false;
+    }
     const horaEntrada = entrada.horaEntrada;
+    const fechaEntrada = entrada.fechaEntrada;
 
-    
-    //agrego imagen si es que hay
+    // Agregar imagen si es que hay
+    let imgSalidaUrl;
     if (req.files) {
-		const { tempFilePath } = req.files.imgSalida;
+        const { tempFilePath } = req.files.imgSalida;
+        const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+        imgSalidaUrl = secure_url;
+    } else {
+        imgSalidaUrl =
+            'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
+    }
 
-		const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+ // Obtener la fecha y hora actual
+ const fechaSalida = new Date();
+horaSalida = `${fechaSalida.getHours()}:${fechaSalida.getMinutes()}`;
 
-		imgSalida = secure_url;
-	} else {
-		imgSalida =
-			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1695818870/samples/placeholder_profile_jhvdpv.png';
-	}
-    
-        // Obtener la fecha y hora actual
-        const now = new Date();
+// Asegurarse de que `horaEntrada` tiene el formato correcto antes de usarlo
+if (!horaEntrada || !horaEntrada.includes(':')) {
+    console.error('Formato incorrecto en horaEntrada');
+}
+
+// Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
+const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
+
+// Utilizar directamente fechaEntrada
+const fechaEntradaConHora = new Date(fechaEntrada);
+const fechaSalidaConHora = new Date(fechaSalida);
+fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
+
+const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+const tiempoMinutos = Math.round(diferenciaMs / (1000 * 60));
+console.log(`Tiempo en minutos: ${tiempoMinutos}`);
 
 
-        const month = now.getMonth() + 1; // Los meses en JavaScript van de 0 a 11
-        const year = now.getFullYear();
 
-        // Obtener la hora (hora, minutos, segundos)
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
+ 
+    // Convertir a horas redondeadas
 
-        // Formatear la fecha y la hora en cadenas
-        fecha = `${month} ${year}`;
-        horaSalida = `${hours}:${minutes}`;
-        tiempo = calculateRoundedHours(horaSalida,horaEntrada)
-
-    
+    //si mercadopago es tru mostrar el link
+    if(mercadoPago){
+        precio = tiempoMinutos * 1500;
+        qr = await generarLinkDePago(precio)
+    }
+    if(!mercadoPago){
+        qr = ''
+    }
 
     try {
-        entrada.imgSalida = imgSalida;
+        entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
-        entrada.tiempo = tiempo;
+        entrada.fechaSalida = fechaSalida;
+        entrada.tiempo = tiempoMinutos;
+        entrada.finalizado = true;
+        entrada.qr = qr;
 
         await entrada.save();
 
         res.status(200).json(entrada);
-        
     } catch (error) {
         console.error(error);
         res.status(500).json({
             msg: 'Hable con el administrador'
         });
     }
+};
 
-
-}
 //ver todas la reservas
 const obtenerReservasAdmin = async (req, res) =>{
     const sucursalId = req.query.sucursal;

@@ -27,6 +27,7 @@ const {  usuariosGetTotal,
         obtenerAbonadoporUsuario,
         crearGasto,
         obtenerGastoporUsuario} = require('../controllers/usuarios');
+const { SalidaAuto, ingresoAuto } = require('../controllers/admin');
 
 const router = Router();
 
@@ -143,6 +144,16 @@ router.get('/gastos-usuario', [
     validarCampos
 ], obtenerGastoporUsuario)
 
+//ingreso de auto
 
+router.post('/ingreso', [
+    validarJWT,
+    validarCampos 
+], ingresoAuto)
+
+router.post('/salida', [
+    validarJWT,
+    validarCampos 
+], SalidaAuto)
 
 module.exports = router;

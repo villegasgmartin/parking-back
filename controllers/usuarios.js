@@ -51,6 +51,9 @@ const usuariosGetTotal = async(req = request, res = response) => {
     }
 };
 
+
+
+
 const getUsuario = async (req, res) => {
     const {id} = req.query;
 
