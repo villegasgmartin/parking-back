@@ -73,6 +73,47 @@ const crearSucursal = async (req, res) =>{
     }
 }
 
+//actualizar sucursal
+
+const actualizarSucursal = async (req, res = response) => {
+    const sucursalId = req.query.sucursalId;  
+    const body = req.body;  
+    const uid = req.uid;  
+    const usuario = await Admin.findById(uid);  
+
+    if (!usuario) {
+        return res.status(404).json({
+            msg: 'Debe tener permiso para actualizar sucursal'
+        });
+    }
+    
+    try {
+        
+        const sucursal = await Sucursal.findByIdAndUpdate(
+            sucursalId,  
+            body,       
+            { new: true } 
+        );
+
+        if (!sucursal) {
+            return res.status(404).json({
+                msg: 'Sucursal no encontrada'
+            });
+        }
+
+        res.json({
+            sucursal,
+            msg: 'Sucursal actualizada'
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Error al actualizar la sucursal'
+        });
+    }
+};
+
 
 /*********************Ingresos y Egresos Autos**************/
 const ingresoAuto = async(req, res) => {
@@ -464,6 +505,67 @@ const obtenerConvenio = async (req, res) =>{
     }
 }
 
+//actualizar convenio
+const convenioPut = async (req, res = response) => {
+    const convenioId = req.query.convenio;
+    const body = req.body;
+    const uid = req.uid;
+  
+    const usuario = await Admin.findById(uid);
+
+    if (!usuario) {
+        return res.status(404).json({
+            msg: 'Debe tener permiso para ver convenios'
+        });
+    }
+    
+    try {
+       
+        const convenio = await Convenio.findByIdAndUpdate(
+            convenioId, // Filtro por ID
+            body,       
+            { new: true } 
+        );
+
+        if (!convenio) {
+            return res.status(404).json({
+                msg: 'Convenio no encontrado'
+            });
+        }
+
+        res.json({
+            convenio,
+            msg: 'Convenio actualizado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Error al actualizar el convenio'
+        });
+    }
+};
+
+//borrar convenio
+
+
+const borrarConvenio = async (req, res) =>{
+    const convenio = req.query.convenio
+
+    try {
+        const result = await Convenio.deleteOne({ _id:new mongoose.Types.ObjectId(convenio) }).exec();
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ msg: 'convenio no encontrado' });
+        }
+        res.json({
+            msg: 'convenio eliminado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
+
+
 const borrarAbonado = async (req, res) =>{
     const abonado = req.query.abonado
 
@@ -480,6 +582,7 @@ const borrarAbonado = async (req, res) =>{
         res.status(404).json({message: error.message});
     }
 }
+
 
 const borrarReserva = async (req, res) =>{
     const reserva = req.query.reserva
@@ -512,9 +615,12 @@ module.exports = {
     borrarComunicado,
     obtenerConvenio,
     crearConvenio,
+    convenioPut,
     VerComunicado,
     borrarAbonado,
     borrarReserva, 
-    getVehiculo
+    getVehiculo,
+    actualizarSucursal,
+    borrarConvenio
 }
 

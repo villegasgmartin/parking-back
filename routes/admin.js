@@ -9,7 +9,8 @@ const {
     tieneRole
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio } = require('../controllers/admin');
+const { obtenerGastoporSucursal } = require('../controllers/usuarios');
 
 
 const router = Router();
@@ -88,6 +89,28 @@ router.get('/get-vehiculos',[
     validarJWT,
     validarCampos
 ] ,getVehiculo)
+
+//obtener convenios
+
+router.get('/gastos-sucursal',[
+    validarJWT,
+    validarCampos
+],obtenerGastoporSucursal)
+
+router.put('/actualizar-convenio',[
+    validarJWT,
+    validarCampos 
+],convenioPut )
+
+router.put('/actualizar-sucursal',[
+    validarJWT,
+    validarCampos 
+],actualizarSucursal )
+
+router.delete('/borrar-convenio',[
+    validarJWT,
+    validarCampos
+], borrarConvenio);
 
 
 module.exports = router;

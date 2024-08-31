@@ -306,7 +306,7 @@ const obtenerAbonadoporUsuario = async (req, res) =>{
  
     if(!usuario){
         return res.status(404).json({
-            msg:'debe tener permiso para ver reservas'
+            msg:'debe tener permiso para ver abonados'
         })
     }
     try {
@@ -371,7 +371,7 @@ const obtenerGastoporUsuario = async (req, res) =>{
     const uid = req.uid
 
     const query = {empleados: uid, sucursal: sucursalId}
-    const usuario = await Empleado.findById(uid);
+    const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
 
  
     if(!usuario){
@@ -389,6 +389,34 @@ const obtenerGastoporUsuario = async (req, res) =>{
     }
 }
 
+//obtener los gastos por sucursal
+
+const obtenerGastoporSucursal = async (req, res) =>{
+    const sucursalId = req.query.sucursal;
+    const uid = req.uid
+
+    const query = {sucursal: sucursalId}
+    const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
+
+ 
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe tener permiso para ver reservas'
+        })
+    }
+   
+    try {
+        const gastos = await Gasto.find(query);
+        res.json(gastos);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
+
+
+
 
 
 module.exports = {
@@ -403,5 +431,6 @@ module.exports = {
     obtenerAbonadoporUsuario,
     crearAbonado,
     obtenerGastoporUsuario,
-    crearGasto
+    crearGasto, 
+    obtenerGastoporSucursal
 }
