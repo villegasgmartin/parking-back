@@ -13,7 +13,7 @@ const Gasto = require('../models/gasto');
 const Convenio = require('../models/convenio');
 
 const usuariosGetTotal = async(req = request, res = response) => {
-    const { limite = 5, desde = 0 } = req.query;
+    const { limite = 15, desde = 0 } = req.query;
     const sucursal = req.query.sucursal;
     const query = { estado: true, sucursal };
 
