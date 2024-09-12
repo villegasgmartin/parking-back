@@ -27,7 +27,7 @@ const {  usuariosGetTotal,
         obtenerAbonadoporUsuario,
         crearGasto,
         obtenerGastoporUsuario} = require('../controllers/usuarios');
-const { SalidaAuto, ingresoAuto } = require('../controllers/admin');
+const { SalidaAuto, ingresoAuto, metodoPago } = require('../controllers/admin');
 
 const router = Router();
 
@@ -156,4 +156,8 @@ router.post('/salida', [
     validarCampos 
 ], SalidaAuto)
 
+router.put('/metodo-pago',[
+    validarJWT,
+    validarCampos 
+], metodoPago)
 module.exports = router;

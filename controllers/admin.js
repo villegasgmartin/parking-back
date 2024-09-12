@@ -174,10 +174,12 @@ const ingresoAuto = async(req, res) => {
 
 const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, ...rest } = req.body;
-    const query = { finalizado: false, patente: patente };
+    const sucursalId = req.query.sucursalId
+    const query = { finalizado: false, patente: patente, sucursal: sucursalId};
 
     // Obtener el registro de entrada
-    const entrada = await Entrada.findOne(query); // Cambiado a findOne para obtener un único registro
+    const entrada = await Entrada.findOne(query);
+    console.log(entrada)
     if (!mercadoPago) {
         mercadoPago = false;
     }
@@ -197,47 +199,59 @@ const SalidaAuto = async (req, res) => {
 
  // Obtener la fecha y hora actual
  const fechaSalida = new Date();
-horaSalida = `${fechaSalida.getHours()}:${fechaSalida.getMinutes()}`;
-
-// Asegurarse de que `horaEntrada` tiene el formato correcto antes de usarlo
-if (!horaEntrada || !horaEntrada.includes(':')) {
-    console.error('Formato incorrecto en horaEntrada');
-}
-
-// Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
-const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
-const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
-
-// Utilizar directamente fechaEntrada
-const fechaEntradaConHora = new Date(fechaEntrada);
-const fechaSalidaConHora = new Date(fechaSalida);
-fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
-
-const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
-const tiempoMinutos = Math.round(diferenciaMs / (1000 * 60));
-console.log(`Tiempo en minutos: ${tiempoMinutos}`);
-
-
-
+ horaSalida = `${fechaSalida.getHours()}:${fechaSalida.getMinutes()}`;
  
-    // Convertir a horas redondeadas
+ // Asegurarse de que `horaEntrada` tiene el formato correcto antes de usarlo
+ if (!horaEntrada || !horaEntrada.includes(':')) {
+     console.error('Formato incorrecto en horaEntrada');
+     return;
+ }
+ 
+ // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
+ const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+ const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
+ 
+ const fechaEntradaConHora = new Date(fechaEntrada);
+ const fechaSalidaConHora = new Date(fechaSalida);
+ fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
+ 
+ const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+ const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
+ 
+ // Calcular las horas completas
+ const horasCompletas = Math.floor(diferenciaMinutos / 60);
+ 
+ // Obtener los minutos restantes después de contar las horas completas
+ const minutosRestantes = diferenciaMinutos % 60;
+ 
+ // Función para redondear en función de 'fraccionado'
+ function redondearTiempo(horasCompletas, minutosRestantes, fraccionado) {
+     if (minutosRestantes === 0) return horasCompletas; // Caso de minutos exactos
+ 
+     // Calcular el límite de minutos a partir del cual se incrementa la hora
+     if (minutosRestantes > fraccionado) {
+         return horasCompletas + 1; // Redondea a la siguiente hora
+     } else {
+         return horasCompletas + 1; // Asegura al menos una hora
+     }
+ }
+ 
+ // Ejemplo de uso
+ const fraccionado = entrada.faccionado; // Puede ser 15, 30, 45, o 60
+ const tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, fraccionado);
+ 
+ console.log(`El tiempo redondeado es: ${Math.max(tiempoRedondeado, 1)} horas`);
 
-    //si mercadopago es tru mostrar el link
-    if(mercadoPago){
-        precio = tiempoMinutos * 1500;
-        qr = await generarLinkDePago(precio)
-    }
-    if(!mercadoPago){
-        qr = ''
-    }
+
+
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempoMinutos;
+        entrada.tiempo = tiempoRedondeado;
         entrada.finalizado = true;
-        entrada.qr = qr;
+        entrada.total = precio;
 
         await entrada.save();
 
@@ -249,6 +263,91 @@ console.log(`Tiempo en minutos: ${tiempoMinutos}`);
         });
     }
 };
+
+//obtener link mercado pago
+const metodoPago = async(req, res) =>{
+    let {patente, metodoPago} = req.body;
+    const sucursalId = req.query.sucursalId
+    const query = { finalizado: true, patente, sucursal: sucursalId};   
+    try {
+        const entrada = await Entrada.findOne(query);
+        precio = entrada.total;
+
+        if(metodoPago= 'mercado pago'){
+            qr = await generarLinkDePago(precio)
+        
+            entrada.metodoPago = metodoPago;
+            entrada.qr = qr;
+    
+            res.status(200).json({
+                qr,
+            })
+        }
+        else{
+            entrada.metodoPago = metodoPago;
+    
+            res.status(200).json({
+                entrada
+            })
+        }
+
+
+       
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+
+}
+//actualizar fraccionado y aumento
+
+const actualizarAumentos = async( req, res)=>{
+    let aumento = req.body;
+    const sucursalId = req.query.sucursalId
+
+    try {
+        const entrada = await Entrada.find(sucursalId);
+        entrada.aumento = 1 + (aumento/100);
+
+        res.status(400).json({
+            msg:'aumento actualizado'
+        })
+
+    } catch ( error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+
+
+}
+
+//actualizar fraccionado y aumento
+
+const actualizarFraccionado = async( req, res)=>{
+    let fraccionado = req.body;
+    const sucursalId = req.query.sucursalId
+
+    try {
+        const entrada = await Entrada.find(sucursalId);
+        entrada.fraccionado = fraccionado;
+
+        res.status(400).json({
+            msg:'fraccionado actualizado'
+        })
+
+    } catch ( error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+
+
+}
 
 //ver todas la reservas
 const obtenerReservasAdmin = async (req, res) =>{
@@ -621,6 +720,9 @@ module.exports = {
     borrarReserva, 
     getVehiculo,
     actualizarSucursal,
-    borrarConvenio
+    borrarConvenio,
+    metodoPago,
+    actualizarFraccionado,
+    actualizarAumentos
 }
 
