@@ -9,7 +9,7 @@ const {
     tieneRole
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa } = require('../controllers/admin');
 const { obtenerGastoporSucursal } = require('../controllers/usuarios');
 
 
@@ -111,6 +111,30 @@ router.delete('/borrar-convenio',[
     validarJWT,
     validarCampos
 ], borrarConvenio);
+
+
+//agregar precio en sucursal
+
+router.post('/nuevo-precio',[
+    validarJWT,
+    validarCampos
+], precioInicial);
+
+router.put('/actualizar-aumentos',[
+    validarJWT,
+    validarCampos 
+], actualizarAumentos)
+
+
+router.put('/actualizar-franccionado',[
+    validarJWT,
+    validarCampos 
+], actualizarFraccionado)
+
+router.get('/tarifas',[
+    validarJWT,
+    validarCampos 
+], getTarifa)
 
 
 module.exports = router;

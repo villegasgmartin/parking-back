@@ -21,6 +21,10 @@ const Vehiculo = require('../models/vehiculo');
 const Registro = require('../models/registro');
 const Comunicado = require('../models/comunicado');
 const Convenio = require('../models/convenio');
+const Tarifa = require('../models/tarifas');
+
+
+
 const generarLinkDePago = require('../middlewares/mercado-pago');
 
 
@@ -116,6 +120,28 @@ const actualizarSucursal = async (req, res = response) => {
 
 
 /*********************Ingresos y Egresos Autos**************/
+
+const precioInicial = async(req, res) => {
+    const {precio} = req.body
+    const sucursalId = req.query.sucursal;
+
+    try {
+        const tarifa = new Tarifa({precio:precio, sucursal:sucursalId});
+        await tarifa.save()
+        res.status(200).json({
+            msg:'precio actualizado en sucursal',
+            tarifa
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Error al agregar tarifa en sucursal'
+        });
+    }
+
+}
+
+
 const ingresoAuto = async(req, res) => {
     let {imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
     const sucursalId = req.query.sucursal;
@@ -176,6 +202,7 @@ const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, ...rest } = req.body;
     const sucursalId = req.query.sucursalId
     const query = { finalizado: false, patente: patente, sucursal: sucursalId};
+    const query2 = { sucursal: sucursalId}
 
     // Obtener el registro de entrada
     const entrada = await Entrada.findOne(query);
@@ -236,22 +263,35 @@ const SalidaAuto = async (req, res) => {
      }
  }
  
- // Ejemplo de uso
- const fraccionado = entrada.faccionado; // Puede ser 15, 30, 45, o 60
+//verificar el faccionado
+const tarifa = await Tarifa.findOne(query2);
+console.log(tarifa.precio , tarifa.aumento,sucursalId)
+
+if(!tarifa.precio) {
+    return res.json({msg:'debe agregar precio inicial'});
+}
+ 
+ const fraccionado = tarifa.faccionado;
  const tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, fraccionado);
  
- console.log(`El tiempo redondeado es: ${Math.max(tiempoRedondeado, 1)} horas`);
+ const tiempo = Math.max(tiempoRedondeado, 1)
 
 
+
+const total = tarifa.precio *  tiempo * tarifa.aumento;
+
+
+
+console.log(tarifa.precio, tiempo , tarifa.aumento)
 
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempoRedondeado;
+        entrada.tiempo = tiempo;
         entrada.finalizado = true;
-        entrada.total = precio;
+        entrada.total = total;
 
         await entrada.save();
 
@@ -267,10 +307,11 @@ const SalidaAuto = async (req, res) => {
 //obtener link mercado pago
 const metodoPago = async(req, res) =>{
     let {patente, metodoPago} = req.body;
-    const sucursalId = req.query.sucursalId
+    const sucursalId = req.query.sucursal
     const query = { finalizado: true, patente, sucursal: sucursalId};   
     try {
         const entrada = await Entrada.findOne(query);
+        console.log(entrada);
         precio = entrada.total;
 
         if(metodoPago= 'mercado pago'){
@@ -278,7 +319,7 @@ const metodoPago = async(req, res) =>{
         
             entrada.metodoPago = metodoPago;
             entrada.qr = qr;
-    
+            await entrada.save();
             res.status(200).json({
                 qr,
             })
@@ -304,12 +345,17 @@ const metodoPago = async(req, res) =>{
 //actualizar fraccionado y aumento
 
 const actualizarAumentos = async( req, res)=>{
-    let aumento = req.body;
+    let {aumento} = req.body;
     const sucursalId = req.query.sucursalId
+    const query2 = { sucursal: sucursalId}
 
     try {
-        const entrada = await Entrada.find(sucursalId);
-        entrada.aumento = 1 + (aumento/100);
+        const tarifa = await Tarifa.findOne(query2);
+        console.log(tarifa)
+        console.log(aumento, aumento/100)
+        tarifa.aumento = 1 + (aumento/100);
+
+        await tarifa.save()
 
         res.status(400).json({
             msg:'aumento actualizado'
@@ -318,7 +364,7 @@ const actualizarAumentos = async( req, res)=>{
     } catch ( error) {
         console.error(error);
         res.status(500).json({
-            msg: 'Hable con el administrador'
+            msg: 'No se pudo realizar el aumento'
         });
     }
 
@@ -328,13 +374,14 @@ const actualizarAumentos = async( req, res)=>{
 //actualizar fraccionado y aumento
 
 const actualizarFraccionado = async( req, res)=>{
-    let fraccionado = req.body;
+    let {fraccionado} = req.body;
     const sucursalId = req.query.sucursalId
+    const query2 = { sucursal: sucursalId}
 
     try {
-        const entrada = await Entrada.find(sucursalId);
-        entrada.fraccionado = fraccionado;
-
+        const tarifa = await Tarifa.findOne(query2);
+        tarifa.fraccionado = fraccionado;
+        await tarifa.save()
         res.status(400).json({
             msg:'fraccionado actualizado'
         })
@@ -348,6 +395,30 @@ const actualizarFraccionado = async( req, res)=>{
 
 
 }
+
+
+//ver tarifa por sucursal
+const getTarifa = async (req, res) => {
+    const sucursalId = req.query.sucursalId
+    const query2 = { sucursal: sucursalId}
+
+    try {
+        const tarifa = await Tarifa.findOne(query2);
+        
+        res.status(400).json({
+            tarifa
+        })
+
+    } catch ( error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
+
+
+
 
 //ver todas la reservas
 const obtenerReservasAdmin = async (req, res) =>{
@@ -723,6 +794,8 @@ module.exports = {
     borrarConvenio,
     metodoPago,
     actualizarFraccionado,
-    actualizarAumentos
+    actualizarAumentos,
+    precioInicial,
+    getTarifa
 }
 

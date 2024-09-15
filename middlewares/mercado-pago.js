@@ -4,6 +4,7 @@ const {MercadoPagoConfig, Preference} = require('mercadopago');
 const client = new MercadoPagoConfig({ accessToken: process.env.TOKEN_MP });
 
 async function generarLinkDePago(precio) {
+  console.log('precio en mercado pago', precio);
   const preference = new Preference(client);
 
   try {

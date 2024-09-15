@@ -47,18 +47,6 @@ const UserSchema = Schema({
         type: Boolean,
         default: false
     },
-    precio:{
-        type: Number,
-        default: 1200
-    },
-    aumento:{
-        type: Number,
-        default: 1
-    },
-    faccionado:{
-        type:Number,
-        default: 60
-    },
     empleados: [
         { type: Schema.Types.ObjectId, ref: 'Empleado' }
     ],
