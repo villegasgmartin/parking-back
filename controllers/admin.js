@@ -304,6 +304,42 @@ console.log(tarifa.precio, tiempo , tarifa.aumento)
     }
 };
 
+
+//get ingreso
+const getIngreso = async(req, res) => {
+    const sucursalId = req.query.sucursal
+    const query = { finalizado: false,sucursal: sucursalId}; 
+
+    try {
+        const entrada = await Entrada.find(query);
+        res.status(200).json({
+            ingresos: entrada
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
+
+//get egresos
+const getEgresos = async(req, res) => {
+    const sucursalId = req.query.sucursal
+    const query = { finalizado: true,sucursal: sucursalId}; 
+
+    try {
+        const entrada = await Entrada.find(query);
+        res.status(200).json({
+            ingresos: entrada
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
 //obtener link mercado pago
 const metodoPago = async(req, res) =>{
     let {patente, metodoPago} = req.body;
@@ -796,6 +832,8 @@ module.exports = {
     actualizarFraccionado,
     actualizarAumentos,
     precioInicial,
-    getTarifa
+    getTarifa,
+    getIngreso,
+    getEgresos
 }
 

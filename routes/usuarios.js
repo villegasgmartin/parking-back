@@ -27,7 +27,7 @@ const {  usuariosGetTotal,
         obtenerAbonadoporUsuario,
         crearGasto,
         obtenerGastoporUsuario} = require('../controllers/usuarios');
-const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado } = require('../controllers/admin');
+const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos } = require('../controllers/admin');
 
 const router = Router();
 
@@ -161,8 +161,15 @@ router.put('/metodo-pago',[
     validarCampos 
 ], metodoPago)
 
+router.get('/ingresos',[
+    validarJWT,
+    validarCampos 
+], getIngreso)
 
-
+router.get('/egresos',[
+    validarJWT,
+    validarCampos 
+], getEgresos)
 
 
 
