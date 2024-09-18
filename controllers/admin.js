@@ -331,7 +331,26 @@ const getEgresos = async(req, res) => {
     try {
         const entrada = await Entrada.find(query);
         res.status(200).json({
-            ingresos: entrada
+            egresos: entrada
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
+
+//get egresos por patente y sucursal
+const getEgresoPorPatente = async(req, res) => {
+    let {patente} = req.body;
+    const sucursalId = req.query.sucursal
+    const query = { finalizado: true,sucursal: sucursalId, patente}; 
+
+    try {
+        const egreso = await Entrada.find(query);
+        res.status(200).json({
+            egreso
         })
     } catch (error) {
         console.error(error);
@@ -834,6 +853,7 @@ module.exports = {
     precioInicial,
     getTarifa,
     getIngreso,
-    getEgresos
+    getEgresos,
+    getEgresoPorPatente
 }
 

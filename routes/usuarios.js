@@ -27,7 +27,7 @@ const {  usuariosGetTotal,
         obtenerAbonadoporUsuario,
         crearGasto,
         obtenerGastoporUsuario} = require('../controllers/usuarios');
-const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos } = require('../controllers/admin');
+const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos, getEgresoPorPatente } = require('../controllers/admin');
 
 const router = Router();
 
@@ -171,6 +171,11 @@ router.get('/egresos',[
     validarCampos 
 ], getEgresos)
 
+
+router.get('/egresos-patente',[
+    validarJWT,
+    validarCampos 
+], getEgresoPorPatente)
 
 
 
