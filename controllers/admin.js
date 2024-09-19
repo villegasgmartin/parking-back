@@ -499,7 +499,44 @@ const getTarifa = async (req, res) => {
     }
 }
 
+//borrar ingreso
 
+const borrarIngreso = async (req, res) =>{
+    const patente = req.query.patente
+    const query = { patente: patente, finalizado: false }
+
+    try {
+        const result = await Entrada.deleteOne(query).exec();
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ msg: 'patente no encontrada' });
+        }
+        res.json({
+            msg: 'Ingreso eliminado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
+
+//borrar egreso
+const borrarEgreso = async (req, res) =>{
+    const patente = req.query.patente
+    const query = { patente: patente, finalizado: true }
+
+    try {
+        const result = await Entrada.deleteOne(query).exec();
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ msg: 'patente no encontrada' });
+        }
+        res.json({
+            msg: 'Egreso eliminado'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
 
 
 //ver todas la reservas
@@ -881,6 +918,8 @@ module.exports = {
     getTarifa,
     getIngreso,
     getEgresos,
-    getEgresoPorPatente
+    getEgresoPorPatente,
+    borrarIngreso,
+    borrarEgreso
 }
 
