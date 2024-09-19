@@ -143,19 +143,37 @@ const precioInicial = async(req, res) => {
 
 
 const ingresoAuto = async(req, res) => {
-    let {imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
+    let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
     const sucursalId = req.query.sucursal;
 
+
     const uid = req.uid
-    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);;
+    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+
+
     if(!usuarioAdmin){
         return res.status(404).json({
             msg:'debe ser admin para ver las sucursales'
         })
     }
 
+    //verificar si el vehiculo no esta ingresado 
+
+  const entradaAnterior = await Entrada.find({patente:patente})
+  console.log(entradaAnterior)
+
+  if(entradaAnterior && !entradaAnterior.finalizado){
+        return res.status(404).json({
+            msg:'El auto ya esta ingresado'
+        })
+  }
 
 
+    if(!usuarioAdmin){
+        return res.status(404).json({
+            msg:'debe ser admin para ver las sucursales'
+        })
+    }
     //agrego imagen si es que hay
     if (req.files) {
 		const { tempFilePath } = req.files.imgEntrada;
@@ -168,19 +186,19 @@ const ingresoAuto = async(req, res) => {
 			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
 	}
     
-        // Obtener la fecha y hora actual
+       // Obtener la fecha y hora actual con la zona horaria de Argentina
+
         const fecha = new Date();
 
-
-   
-        // Obtener la hora (hora, minutos, segundos)
-        const hours = fecha.getHours();
-        const minutes = fecha.getMinutes();
-
-        // Formatear la fecha y la hora en cadenas
-        // fecha = `${month} ${year}`;
-        horaEntrada = `${hours}:${minutes}`;
-
+        // Formatear la hora a la zona horaria de Argentina (GMT-3)
+        const options = {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false, // Para mostrar la hora en formato 24 horas
+        };
+        // Obtener la hora formateada
+        horaEntrada = fecha.toLocaleTimeString('es-AR', options);
     
 
     try {
@@ -225,8 +243,17 @@ const SalidaAuto = async (req, res) => {
     }
 
  // Obtener la fecha y hora actual
+
  const fechaSalida = new Date();
- horaSalida = `${fechaSalida.getHours()}:${fechaSalida.getMinutes()}`;
+
+ // Formatear la hora a la zona horaria de Argentina (GMT-3)
+ const options = {
+ timeZone: 'America/Argentina/Buenos_Aires',
+ hour: '2-digit',
+ minute: '2-digit',
+ hour12: false, // Para mostrar la hora en formato 24 horas
+ };
+ horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
  
  // Asegurarse de que `horaEntrada` tiene el formato correcto antes de usarlo
  if (!horaEntrada || !horaEntrada.includes(':')) {
