@@ -159,21 +159,15 @@ const ingresoAuto = async(req, res) => {
 
     //verificar si el vehiculo no esta ingresado 
 
-  const entradaAnterior = await Entrada.find({patente:patente})
-  console.log(entradaAnterior)
-
-  if(entradaAnterior && !entradaAnterior.finalizado){
+    const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
+    console.log(entradaAnterior);
+    
+    if (entradaAnterior) {
         return res.status(404).json({
-            msg:'El auto ya esta ingresado'
-        })
-  }
-
-
-    if(!usuarioAdmin){
-        return res.status(404).json({
-            msg:'debe ser admin para ver las sucursales'
-        })
+            msg: 'El auto ya está ingresado'
+        });
     }
+
     //agrego imagen si es que hay
     if (req.files) {
 		const { tempFilePath } = req.files.imgEntrada;
@@ -202,7 +196,7 @@ const ingresoAuto = async(req, res) => {
     
 
     try {
-        const ingreso = new Entrada({imgEntrada,fechaEntrada:fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId})
+        const ingreso = new Entrada({imgEntrada,fechaEntrada:fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId, patente:patente});
         await ingreso.save();
         res.status(200).json(ingreso);
         

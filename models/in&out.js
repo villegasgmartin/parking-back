@@ -4,7 +4,7 @@ const {Schema, model } = require('mongoose');
 const UserSchema = Schema({
     patente:{
         type: String,
-        required: [true, 'El patente es requerido']
+        required: [true, 'El patent es requerido']
     },
     tipo:{
         type: String,
