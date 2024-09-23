@@ -7,6 +7,7 @@ const Empleado = require('../models/empleado')
 const Admin = require('../models/usuarioAdmin')
 const Registro = require('../models/registro')
 const Sucursal = require('../models/sucursales');
+const AutorizacionIP = require('../models/ip');
 
 const { generarJWT } = require('../helpers/generar-jwt');
 
@@ -16,7 +17,19 @@ const login = async(req, res = response) => {
 
     const { correo, password } = req.body;
 
-    try {
+     // Obtener la IP del cliente
+     const clienteIP = req.headers['x-forwarded-for'] || req.ip;
+    console.log(clienteIP)
+     try {
+
+       
+         // Verificar si la IP está autorizada
+         const ipAutorizada = await AutorizacionIP.findOne({ ip: clienteIP });
+         if (!ipAutorizada) {
+             return res.status(403).json({
+                 msg: 'Acceso denegado desde esta IP'
+             });
+         }
       
         // Verificar si el email existe
         const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({correo}) ;
