@@ -24,12 +24,12 @@ const login = async(req, res = response) => {
 
        
          // Verificar si la IP está autorizada
-         const ipAutorizada = await AutorizacionIP.findOne({ ip: clienteIP });
-         if (!ipAutorizada) {
-             return res.status(403).json({
-                 msg: 'Acceso denegado desde esta IP'
-             });
-         }
+        //  const ipAutorizada = await AutorizacionIP.findOne({ ip: clienteIP });
+        //  if (!ipAutorizada) {
+        //      return res.status(403).json({
+        //          msg: 'Acceso denegado desde esta IP'
+        //      });
+        //  }
       
         // Verificar si el email existe
         const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({correo}) ;
