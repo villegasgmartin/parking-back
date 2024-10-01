@@ -3,9 +3,17 @@ const {Schema, model } = require('mongoose');
 const TarifasSchema = Schema({
 
 
-    precio:{
+    precioregular:{
         type: Number,
         default: 1200
+    },
+    precio6horas:{
+        type: Number,
+        default: 1000
+    },
+    precio12horas:{
+        type: Number,
+        default: 800
     },
     aumento:{
         type: Number,

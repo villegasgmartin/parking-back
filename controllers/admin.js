@@ -28,6 +28,7 @@ const Tarifa = require('../models/tarifas');
 const generarLinkDePago = require('../middlewares/mercado-pago');
 
 
+
 /**********Sucursales***********************/
 const getSucursales = async (req, res) =>{
     const uid = req.uid
@@ -122,14 +123,14 @@ const actualizarSucursal = async (req, res = response) => {
 /*********************Ingresos y Egresos Autos**************/
 
 const precioInicial = async(req, res) => {
-    const {precio} = req.body
+    const {precioregular,precio6horas, precio12horas, fraccionado } = req.body
     const sucursalId = req.query.sucursal;
 
     try {
-        const tarifa = new Tarifa({precio:precio, sucursal:sucursalId});
+        const tarifa = new Tarifa({precioregular,precio6horas,precio12horas, fraccionado, sucursal:sucursalId});
         await tarifa.save()
         res.status(200).json({
-            msg:'precio actualizado en sucursal',
+            msg:'precios actualizados en sucursal',
             tarifa
         })
     } catch (error) {
@@ -212,18 +213,32 @@ const ingresoAuto = async(req, res) => {
 
 const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, ...rest } = req.body;
-    const sucursalId = req.query.sucursalId
-    const query = { finalizado: false, patente: patente, sucursal: sucursalId};
-    const query2 = { sucursal: sucursalId}
+    const sucursalId = req.query.sucursalId;
+    const query = { finalizado: false, patente: patente, sucursal: sucursalId };
+    const query2 = { sucursal: sucursalId };
 
     // Obtener el registro de entrada
-    const entrada = await Entrada.findOne(query);
-    console.log(entrada)
+    const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
+
     if (!mercadoPago) {
         mercadoPago = false;
     }
-    const horaEntrada = entrada.horaEntrada;
-    const fechaEntrada = entrada.fechaEntrada;
+
+    let fechaEntrada, horaEntrada;
+
+
+    if (entrada.tipo === 'Reserva') {
+        fechaEntrada = entrada.fechaIngreso;
+
+        horaEntrada = entrada.horaIngreso.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    } else {
+        horaEntrada = entrada.horaEntrada;
+        fechaEntrada = entrada.fechaEntrada;
+    }
 
     // Agregar imagen si es que hay
     let imgSalidaUrl;
@@ -232,85 +247,108 @@ const SalidaAuto = async (req, res) => {
         const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
         imgSalidaUrl = secure_url;
     } else {
-        imgSalidaUrl =
-            'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
+        imgSalidaUrl = 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
     }
 
- // Obtener la fecha y hora actual
+    // Obtener la fecha y hora actual
+    const fechaSalida = new Date();
+    const options = {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    };
+    horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
- const fechaSalida = new Date();
+    // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
+    const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+    const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
 
- // Formatear la hora a la zona horaria de Argentina (GMT-3)
- const options = {
- timeZone: 'America/Argentina/Buenos_Aires',
- hour: '2-digit',
- minute: '2-digit',
- hour12: false, // Para mostrar la hora en formato 24 horas
- };
- horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
- 
- // Asegurarse de que `horaEntrada` tiene el formato correcto antes de usarlo
- if (!horaEntrada || !horaEntrada.includes(':')) {
-     console.error('Formato incorrecto en horaEntrada');
-     return;
- }
- 
- // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
- const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
- const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
- 
- const fechaEntradaConHora = new Date(fechaEntrada);
- const fechaSalidaConHora = new Date(fechaSalida);
- fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
- 
- const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
- const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
- 
- // Calcular las horas completas
- const horasCompletas = Math.floor(diferenciaMinutos / 60);
- 
- // Obtener los minutos restantes después de contar las horas completas
- const minutosRestantes = diferenciaMinutos % 60;
- 
- // Función para redondear en función de 'fraccionado'
- function redondearTiempo(horasCompletas, minutosRestantes, fraccionado) {
-     if (minutosRestantes === 0) return horasCompletas; // Caso de minutos exactos
- 
-     // Calcular el límite de minutos a partir del cual se incrementa la hora
-     if (minutosRestantes > fraccionado) {
-         return horasCompletas + 1; // Redondea a la siguiente hora
-     } else {
-         return horasCompletas + 1; // Asegura al menos una hora
-     }
- }
- 
-//verificar el faccionado
-const tarifa = await Tarifa.findOne(query2);
-console.log(tarifa.precio , tarifa.aumento,sucursalId)
+    const fechaEntradaConHora = new Date(fechaEntrada);
+    const fechaSalidaConHora = new Date(fechaSalida);
+    fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
 
-if(!tarifa.precio) {
-    return res.json({msg:'debe agregar precio inicial'});
-}
- 
- const fraccionado = tarifa.faccionado;
- const tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, fraccionado);
- 
- const tiempo = Math.max(tiempoRedondeado, 1)
+    const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+    const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
+
+    const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
+    const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
+
+// Verificar si es reserva y si se pasó del tiempo previsto
+if (entrada.tipo === 'Reserva') {
+    fechaPrevista = new Date(entrada.fechaEgreso);
+    const [horaPrevistaHoras, horaPrevistaMinutos] = entrada.horaEgreso
+        .toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        })
+        .split(':')
+        .map(Number);
+
+    fechaPrevista.setHours(horaPrevistaHoras, horaPrevistaMinutos);
+
+    // Verificar si la fecha y hora actual superan la prevista
+    if (fechaSalidaConHora <= fechaPrevista) {
+        return res.status(200).json({
+            msg: 'Reserva completada sin extras'
+        });
+    } else {
+        // Calcular el tiempo extra en milisegundos
+        const tiempoExtraMs = fechaSalidaConHora - fechaPrevista;
+         horasExtrasReserva = Math.floor(tiempoExtraMs / (1000 * 60 * 60)); // Horas completas
+         minutosExtrasReserva = Math.floor((tiempoExtraMs % (1000 * 60 * 60)) / (1000 * 60)); 
+        }
+    }
+
+    // Verificar el fraccionado para el cálculo del tiempo
+    const tarifa = await Tarifa.findOne(query2);
+    if (!tarifa.precioregular) {
+        return res.json({ msg: 'Debe agregar precio inicial' });
+    }
 
 
 
-const total = tarifa.precio *  tiempo * tarifa.aumento;
+    // Función para calcular el costo basado en las horas pasadas
+    function calcularTarifaPorHoras(horas) {
+        let total = 0;
 
 
+        if (horas <= 1) {
+            total = horas * tarifa.precioregular;
+        } else if (horas > 1 && horas <= 6) {
+            total = horas * tarifa.precioregular; // Tarifa por las primeras 6 horas
+        } else if (horas > 6 && horas <= 12) {
+            total = horas * tarifa.precio6horas; // Tarifa para 12 horas
+        } else if (horas > 12 && horas <= 24) {
+            total = horas* precio12horas; // Tarifa para 24 horas
+        } else {
+            // Si se pasan las 24 horas, vuelve a empezar el ciclo de tarifas
+            const diasCompletos = Math.floor(horas / 24);
+            const horasRestantes = horas % 24;
+            total = (diasCompletos * tarifa.precio12horas * 24) + calcularTarifaPorHoras(horasRestantes);
+        }
 
-console.log(tarifa.precio, tiempo , tarifa.aumento)
+        return total;
+    }
 
+    // Verificar el fraccionado y calcular el tiempo total en función del precio
+    if(entrada.tipo === 'Reserva' && fechaSalidaConHora > fechaPrevista){
+        tiempoRedondeado = redondearTiempo(horasExtrasReserva, minutosExtrasReserva, tarifa.fraccionado);
+        total = calcularTarifaPorHoras(tiempoRedondeado);
+    }
+
+
+    tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, tarifa.fraccionado);
+    total = calcularTarifaPorHoras(tiempoRedondeado);
+
+    console.log(tiempoRedondeado, tarifa.precioregular, tarifa.precio6horas, tarifa.precio12horas )
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempo;
+        entrada.tiempo = tiempoRedondeado;
         entrada.finalizado = true;
         entrada.total = total;
 
@@ -325,6 +363,17 @@ console.log(tarifa.precio, tiempo , tarifa.aumento)
     }
 };
 
+// Función para redondear el tiempo en función de 'fraccionado'
+function redondearTiempo(horasCompletas, minutosRestantes, fraccionado) {
+    if (minutosRestantes === 0) return horasCompletas;
+
+    if (minutosRestantes > fraccionado) {
+        return horasCompletas + 1;
+    } else {
+        return horasCompletas + 1;
+    }
+}
+
 
 //get ingreso
 const getIngreso = async(req, res) => {
@@ -332,9 +381,17 @@ const getIngreso = async(req, res) => {
     const query = { finalizado: false,sucursal: sucursalId}; 
 
     try {
+        
+        
         const entrada = await Entrada.find(query);
+        const reservas =await Reserva.find(query);
+        const ingresos = {
+            entrada,
+            reservas
+        };
+
         res.status(200).json({
-            ingresos: entrada
+            ingresos
         })
     } catch (error) {
         console.error(error);
@@ -350,9 +407,17 @@ const getEgresos = async(req, res) => {
     const query = { finalizado: true,sucursal: sucursalId}; 
 
     try {
-        const entrada = await Entrada.find(query);
+        const salidas = await Entrada.find(query);
+        const reservas =await Reserva.find(query);
+        const egresos = {
+            salidas,
+            reservas
+        };
+
+
+
         res.status(200).json({
-            egresos: entrada
+            egresos
         })
     } catch (error) {
         console.error(error);

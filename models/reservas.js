@@ -27,7 +27,37 @@ const UserSchema = new Schema({
     ],
     sucursal: [
         { type: Schema.Types.ObjectId, ref: 'Sucursal' }
-    ]
+    ],
+    imgSalida:{
+        type: String,
+    },
+    horaSalida:{
+        type: String,
+    },
+    fechaSalida:{
+        type: Date,   
+    },
+    tiempo: {
+        type: Number
+    },
+    total:{
+        type: Number,
+    },
+    finalizado:{
+        type: Boolean,
+        default: false
+    },
+    tipo:{
+        type: String,
+        default: 'Reserva'
+    },
+    metodoPago:{
+        type: String,
+        
+    },
+    qr:{
+      type:String  
+    },
 });
 
 

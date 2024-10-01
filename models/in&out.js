@@ -52,7 +52,11 @@ const UserSchema = Schema({
     ],
     sucursal: [
         { type: Schema.Types.ObjectId, ref: 'Sucursal' }
-    ]
+    ],
+    tipo:{
+        type: String,
+        default: 'Ingreso'
+    }
     
 })
 

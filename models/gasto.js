@@ -17,8 +17,6 @@ const UserSchema = new Schema({
         type: String,
         required: [true, 'La Imagen  es requerida']
     },
-
-
     empleados: [
         { type: Schema.Types.ObjectId, ref: 'Empleado' }
     ],
