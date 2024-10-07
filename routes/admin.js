@@ -81,8 +81,7 @@ router.delete('/borrar-abonado',[
 ], borrarAbonado);
 
 router.delete('/borrar-reserva',[
-    validarJWT,
-    validarCampos
+    validarJWT
 ], borrarReserva);
 
 router.get('/get-vehiculos',[

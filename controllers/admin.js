@@ -498,7 +498,7 @@ const actualizarAumentos = async( req, res)=>{
 
         await tarifa.save()
 
-        res.status(400).json({
+        res.status(200).json({
             msg:'aumento actualizado'
         })
 
