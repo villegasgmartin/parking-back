@@ -523,7 +523,7 @@ const actualizarFraccionado = async( req, res)=>{
         const tarifa = await Tarifa.findOne(query2);
         tarifa.fraccionado = fraccionado;
         await tarifa.save()
-        res.status(400).json({
+        res.status(200).json({
             msg:'fraccionado actualizado'
         })
 
@@ -546,7 +546,7 @@ const getTarifa = async (req, res) => {
     try {
         const tarifa = await Tarifa.findOne(query2);
         
-        res.status(400).json({
+        res.status(200).json({
             tarifa
         })
 
