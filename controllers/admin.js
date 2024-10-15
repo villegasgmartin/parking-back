@@ -123,15 +123,21 @@ const actualizarSucursal = async (req, res = response) => {
 /*********************Ingresos y Egresos Autos**************/
 
 const precioInicial = async(req, res) => {
-    const {precioregular,precio6horas, precio12horas, fraccionado } = req.body
+    let {clase, precioregular,segundoprecio, tercerprecio, fraccionado } = req.body
     const sucursalId = req.query.sucursal;
+    const query = {sucursal:sucursalId, clase:clase}
 
     try {
-        const tarifa = new Tarifa({precioregular,precio6horas,precio12horas, fraccionado, sucursal:sucursalId});
-        await tarifa.save()
+        const clase = await Vehiculo.findOne(query)
+        clase.precioregular = precioregular;
+        clase.segundoprecio = segundoprecio;
+        clase.tercerprecio = tercerprecio;
+        clase.fraccionado = fraccionado;
+        await clase.save()
+
         res.status(200).json({
-            msg:'precios actualizados en sucursal',
-            tarifa
+            msg:'precios actualizados para la clase en sucursal',
+            clase
         })
     } catch (error) {
         console.error(error);
@@ -486,15 +492,22 @@ const metodoPago = async(req, res) =>{
 //actualizar fraccionado y aumento
 
 const actualizarAumentos = async( req, res)=>{
-    let {aumento} = req.body;
+    let {clase, precioregular,segundoprecio, tercerprecio} = req.body;
     const sucursalId = req.query.sucursalId
-    const query2 = { sucursal: sucursalId}
+    const query2 = { sucursal: sucursalId, clase:clase}
 
     try {
-        const tarifa = await Tarifa.findOne(query2);
+        const tarifa = await Vehiculo.findOne(query2);
         console.log(tarifa)
         console.log(aumento, aumento/100)
         tarifa.aumento = 1 + (aumento/100);
+
+        const increase = 1 + (aumento/100);
+
+        tarifa.precioregular = precioregular*increase;
+        tarifa.segundoprecio = segundoprecio*increase;
+        tarifa.tercerprecio = tercerprecio*increase;
+
 
         await tarifa.save()
 
@@ -651,6 +664,7 @@ const obtenerAbonadoporAdmin = async (req, res) =>{
 const CrearVehiculo = async (req, res = response) => {
         
     let {admin,...body} = req.body;
+    const sucursalId = req.query.sucursalId;
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid)
     if(!usuarioAdmin){
@@ -658,7 +672,7 @@ const CrearVehiculo = async (req, res = response) => {
             msg:'debe ser admin para crear convenio'
         })
     }
-    const vehiculo = new Vehiculo({...body,admin:uid});
+    const vehiculo = new Vehiculo({...body,admin:uid, sucursal:sucursalId});
 
     try {
         await vehiculo.save()
