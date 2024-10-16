@@ -123,16 +123,16 @@ const actualizarSucursal = async (req, res = response) => {
 /*********************Ingresos y Egresos Autos**************/
 
 const precioInicial = async(req, res) => {
-    let {clase, precioregular,segundoprecio, tercerprecio, fraccionado } = req.body
+    let {clase, precioregular,segundoprecio, tercerprecio, fraccionado1,fraccionado2, vehiculo } = req.body
     const sucursalId = req.query.sucursal;
-    const query = {sucursal:sucursalId, clase:clase}
+    const query = {sucursal:sucursalId, clase:clase, vehiculo:vehiculo}
 
     try {
         const clase = await Vehiculo.findOne(query)
-        clase.precioregular = precioregular;
-        clase.segundoprecio = segundoprecio;
-        clase.tercerprecio = tercerprecio;
-        clase.fraccionado = fraccionado;
+        console.log(clase)
+        clase.tarifa.push(precioregular,segundoprecio, tercerprecio)
+        clase.fraccionado1 = fraccionado1;
+        clase.fraccionado2 = fraccionado2;
         await clase.save()
 
         res.status(200).json({
@@ -147,7 +147,6 @@ const precioInicial = async(req, res) => {
     }
 
 }
-
 
 const ingresoAuto = async(req, res) => {
     let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
@@ -218,12 +217,11 @@ const ingresoAuto = async(req, res) => {
 }
 
 const SalidaAuto = async (req, res) => {
-    let { imgSalida, horaSalida, patente, mercadoPago, ...rest } = req.body;
+    let { imgSalida, horaSalida, patente, mercadoPago, vehiculo, clase, ...rest } = req.body;
     const sucursalId = req.query.sucursalId;
     const query = { finalizado: false, patente: patente, sucursal: sucursalId };
-    const query2 = { sucursal: sucursalId };
 
-    // Obtener el registro de entrada
+    // Obtener el registro de entrada (puede ser una entrada regular o una reserva)
     const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
 
     if (!mercadoPago) {
@@ -231,11 +229,8 @@ const SalidaAuto = async (req, res) => {
     }
 
     let fechaEntrada, horaEntrada;
-
-
     if (entrada.tipo === 'Reserva') {
         fechaEntrada = entrada.fechaIngreso;
-
         horaEntrada = entrada.horaIngreso.toLocaleTimeString('es-AR', {
             hour: '2-digit',
             minute: '2-digit',
@@ -246,7 +241,7 @@ const SalidaAuto = async (req, res) => {
         fechaEntrada = entrada.fechaEntrada;
     }
 
-    // Agregar imagen si es que hay
+    // Obtener la imagen si es que hay una cargada
     let imgSalidaUrl;
     if (req.files) {
         const { tempFilePath } = req.files.imgSalida;
@@ -266,7 +261,7 @@ const SalidaAuto = async (req, res) => {
     };
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
-    // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
+    // Crear objetos Date para las fechas de entrada y salida
     const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
     const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
 
@@ -276,85 +271,46 @@ const SalidaAuto = async (req, res) => {
 
     const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
     const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
-
     const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
-// Verificar si es reserva y si se pasó del tiempo previsto
-if (entrada.tipo === 'Reserva') {
-    fechaPrevista = new Date(entrada.fechaEgreso);
-    const [horaPrevistaHoras, horaPrevistaMinutos] = entrada.horaEgreso
-        .toLocaleTimeString('es-AR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
-        .split(':')
-        .map(Number);
-
-    fechaPrevista.setHours(horaPrevistaHoras, horaPrevistaMinutos);
-
-    // Verificar si la fecha y hora actual superan la prevista
-    if (fechaSalidaConHora <= fechaPrevista) {
-        return res.status(200).json({
-            msg: 'Reserva completada sin extras'
-        });
-    } else {
-        // Calcular el tiempo extra en milisegundos
-        const tiempoExtraMs = fechaSalidaConHora - fechaPrevista;
-         horasExtrasReserva = Math.floor(tiempoExtraMs / (1000 * 60 * 60)); // Horas completas
-         minutosExtrasReserva = Math.floor((tiempoExtraMs % (1000 * 60 * 60)) / (1000 * 60)); 
-        }
+    // Obtener la información del vehículo
+    const vehiculoInfo = await Vehiculo.findOne({ vehiculo: vehiculo, sucursal: sucursalId, clase: clase});
+    if (!vehiculoInfo) {
+        return res.status(404).json({ msg: 'Vehículo no encontrado' });
     }
 
-    // Verificar el fraccionado para el cálculo del tiempo
-    const tarifa = await Tarifa.findOne(query2);
-    if (!tarifa.precioregular) {
-        return res.json({ msg: 'Debe agregar precio inicial' });
-    }
-
-
-
-    // Función para calcular el costo basado en las horas pasadas
-    function calcularTarifaPorHoras(horas) {
+    const { tarifa, fraccionado1, fraccionado2 } = vehiculoInfo;
+    
+    // Función para calcular el costo basado en la fracción de tiempo
+    function calcularTarifa(horas, minutos) {
         let total = 0;
+        const tiempoTotalMinutos = (horas * 60) + minutos;
 
-
-        if (horas <= 1) {
-            total = horas * tarifa.precioregular;
-        } else if (horas > 1 && horas <= 6) {
-            total = horas * tarifa.precioregular; // Tarifa por las primeras 6 horas
-        } else if (horas > 6 && horas <= 12) {
-            total = horas * tarifa.precio6horas; // Tarifa para 12 horas
-        } else if (horas > 12 && horas <= 24) {
-            total = horas* precio12horas; // Tarifa para 24 horas
+        if (tiempoTotalMinutos <= fraccionado1) {
+            total = tarifa[0]; // Tarifa inicial
+        } else if (tiempoTotalMinutos <= fraccionado1 + fraccionado2) {
+            total = tarifa[1]; // Tarifa valor2
+        } else if (tiempoTotalMinutos <= 24 * 60) {
+            total = tarifa[2]; // Tarifa valor3
         } else {
-            // Si se pasan las 24 horas, vuelve a empezar el ciclo de tarifas
-            const diasCompletos = Math.floor(horas / 24);
-            const horasRestantes = horas % 24;
-            total = (diasCompletos * tarifa.precio12horas * 24) + calcularTarifaPorHoras(horasRestantes);
+            // Si se pasan las 24 horas, vuelve a la tarifa inicial y se cuenta un nuevo día
+            const diasCompletos = Math.floor(tiempoTotalMinutos / (24 * 60));
+            const minutosRestantes = tiempoTotalMinutos % (24 * 60);
+            total = diasCompletos * tarifa[0] + calcularTarifa(0, minutosRestantes);
         }
 
         return total;
     }
 
-    // Verificar el fraccionado y calcular el tiempo total en función del precio
-    if(entrada.tipo === 'Reserva' && fechaSalidaConHora > fechaPrevista){
-        tiempoRedondeado = redondearTiempo(horasExtrasReserva, minutosExtrasReserva, tarifa.fraccionado);
-        total = calcularTarifaPorHoras(tiempoRedondeado);
-    }
-
-
-    tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, tarifa.fraccionado);
-    total = calcularTarifaPorHoras(tiempoRedondeado);
-
-    console.log(tiempoRedondeado, tarifa.precioregular, tarifa.precio6horas, tarifa.precio12horas )
+    // Calcular el total basado en el tiempo transcurrido
+    const total = calcularTarifa(horasCompletas, minutosRestantes);
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempoRedondeado;
+        entrada.tiempo = horasCompletas + 'h ' + minutosRestantes + 'm';
         entrada.finalizado = true;
         entrada.total = total;
 
@@ -364,10 +320,11 @@ if (entrada.tipo === 'Reserva') {
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            msg: 'Hable con el administrador'
+            msg: 'Error al procesar la salida del vehículo'
         });
     }
 };
+
 
 // Función para redondear el tiempo en función de 'fraccionado'
 function redondearTiempo(horasCompletas, minutosRestantes, fraccionado) {
@@ -508,9 +465,7 @@ const actualizarAumentos = async( req, res)=>{
         tarifa.segundoprecio = segundoprecio*increase;
         tarifa.tercerprecio = tercerprecio*increase;
 
-
         await tarifa.save()
-
         res.status(200).json({
             msg:'aumento actualizado'
         })
@@ -528,12 +483,12 @@ const actualizarAumentos = async( req, res)=>{
 //actualizar fraccionado y aumento
 
 const actualizarFraccionado = async( req, res)=>{
-    let {fraccionado} = req.body;
+    let {fraccionado, clase} = req.body;
     const sucursalId = req.query.sucursalId
-    const query2 = { sucursal: sucursalId}
+    const query2 = { sucursal: sucursalId, clase:clase}
 
     try {
-        const tarifa = await Tarifa.findOne(query2);
+        const tarifa = await Vehiculo.findOne(query2);
         tarifa.fraccionado = fraccionado;
         await tarifa.save()
         res.status(200).json({
@@ -551,13 +506,14 @@ const actualizarFraccionado = async( req, res)=>{
 }
 
 
-//ver tarifa por sucursal
+//ver tarifa por sucursal y clase
 const getTarifa = async (req, res) => {
+    const {clase} = req.body;
     const sucursalId = req.query.sucursalId
-    const query2 = { sucursal: sucursalId}
+    const query2 = { sucursal: sucursalId, clase:clase}
 
     try {
-        const tarifa = await Tarifa.findOne(query2);
+        const tarifa = await Vehiculo.findOne(query2);
         
         res.status(200).json({
             tarifa

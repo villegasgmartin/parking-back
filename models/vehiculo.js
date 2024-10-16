@@ -8,7 +8,7 @@ const UserSchema = new Schema({
     },
     clase: {
         type: String,
-        required: [true, 'El vehiculo es requerido']
+        required: [true, 'La clase es requerido']
     },
     admin: [
         { type: Schema.Types.ObjectId, ref: 'Admin_Parking' }
@@ -18,16 +18,18 @@ const UserSchema = new Schema({
     ],
     tarifa: [
         {
-            precioregular: { type: Number, default: 1200 },
-            segundoprecio: { type: Number, default: 1000 },
-            tercerprecio: { type: Number, default: 800 }
+            type: Number
         }
     ],
     aumento: {
         type: Number,
         default: 1
     },
-    fraccionado: {
+    fraccionado1: {
+        type: Number,
+        default: 60
+    },
+    fraccionado2: {
         type: Number,
         default: 60
     }

@@ -56,6 +56,14 @@ const UserSchema = Schema({
     tipo:{
         type: String,
         default: 'Ingreso'
+    },
+    vehiculo: {
+        type: String,
+        required: [true, 'El vehiculo es requerido']
+    },
+    clase: {
+        type: String,
+        required: [true, 'La clase es requerido']
     }
     
 })
