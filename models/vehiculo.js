@@ -32,6 +32,10 @@ const UserSchema = new Schema({
     fraccionado2: {
         type: Number,
         default: 60
+    },
+    tolerancia:{
+        type: Number,
+        default: 15
     }
 });
 

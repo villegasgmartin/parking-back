@@ -166,7 +166,6 @@ const ingresoAuto = async(req, res) => {
     //verificar si el vehiculo no esta ingresado 
 
     const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
-    console.log(entradaAnterior);
     
     if (entradaAnterior) {
         return res.status(404).json({
@@ -216,12 +215,15 @@ const ingresoAuto = async(req, res) => {
 
 }
 
+
+
 const SalidaAuto = async (req, res) => {
-    let { imgSalida, horaSalida, patente, mercadoPago, vehiculo, clase, ...rest } = req.body;
+    let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
     const sucursalId = req.query.sucursalId;
     const query = { finalizado: false, patente: patente, sucursal: sucursalId };
+    const query2 = { sucursal: sucursalId };
 
-    // Obtener el registro de entrada (puede ser una entrada regular o una reserva)
+    // Obtener el registro de entrada
     const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
 
     if (!mercadoPago) {
@@ -241,7 +243,7 @@ const SalidaAuto = async (req, res) => {
         fechaEntrada = entrada.fechaEntrada;
     }
 
-    // Obtener la imagen si es que hay una cargada
+    // Agregar imagen si es que hay
     let imgSalidaUrl;
     if (req.files) {
         const { tempFilePath } = req.files.imgSalida;
@@ -261,7 +263,7 @@ const SalidaAuto = async (req, res) => {
     };
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
-    // Crear objetos Date para las fechas de entrada y salida
+    // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
     const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
     const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
 
@@ -271,46 +273,53 @@ const SalidaAuto = async (req, res) => {
 
     const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
     const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
+
     const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
-    // Obtener la información del vehículo
-    const vehiculoInfo = await Vehiculo.findOne({ vehiculo: vehiculo, sucursal: sucursalId, clase: clase});
-    if (!vehiculoInfo) {
-        return res.status(404).json({ msg: 'Vehículo no encontrado' });
+    // Verificar el fraccionado y redondear el tiempo si es necesario
+    const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase:clase});
+    const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
+
+    // Función para redondear el tiempo hacia la hora más próxima
+    function redondearTiempo(horas, minutos, tolerancia) {
+        if (minutos > tolerancia) {
+            return horas + 1; // Se cobra la siguiente hora completa
+        }
+        return horas; // Se cobra la hora actual si no se pasó del fraccionado
     }
 
-    const { tarifa, fraccionado1, fraccionado2 } = vehiculoInfo;
-    
-    // Función para calcular el costo basado en la fracción de tiempo
-    function calcularTarifa(horas, minutos) {
+    // Redondear el tiempo para el cálculo de tarifas
+    const tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, tolerancia);
+
+    // Función para calcular el costo basado en las horas pasadas
+    function calcularTarifaPorHoras(horas) {
         let total = 0;
-        const tiempoTotalMinutos = (horas * 60) + minutos;
-
-        if (tiempoTotalMinutos <= fraccionado1) {
+        if (horas <= 1) {
             total = tarifa[0]; // Tarifa inicial
-        } else if (tiempoTotalMinutos <= fraccionado1 + fraccionado2) {
-            total = tarifa[1]; // Tarifa valor2
-        } else if (tiempoTotalMinutos <= 24 * 60) {
-            total = tarifa[2]; // Tarifa valor3
+        } else if (horas > 1 && horas <= fraccionado1) {
+            total = tarifa[0] + ((horas - 1) * tarifa[1]); // Tarifa para las primeras 6 horas
+        } else if (horas > fraccionado1 && horas <= fraccionado2) {
+            total = tarifa[0] + (5 * tarifa[1]) + ((horas - 6) * tarifa[2]); // Tarifa para las primeras 12 horas
+        } else if (horas > fraccionado2 && horas <= 24) {
+            total = tarifa[0] + (5 * tarifa[1]) + (6 * tarifa[2]) + ((horas - 12) * tarifa[3]); // Tarifa para 24 horas
         } else {
-            // Si se pasan las 24 horas, vuelve a la tarifa inicial y se cuenta un nuevo día
-            const diasCompletos = Math.floor(tiempoTotalMinutos / (24 * 60));
-            const minutosRestantes = tiempoTotalMinutos % (24 * 60);
-            total = diasCompletos * tarifa[0] + calcularTarifa(0, minutosRestantes);
+            // Si se pasan las 24 horas, reiniciar el ciclo de tarifas
+            const diasCompletos = Math.floor(horas / 24);
+            const horasRestantes = horas % 24;
+            total = (diasCompletos * (tarifa[0] + (5 * tarifa[1]) + (6 * tarifa[2]) + (12 * tarifa[3]))) + calcularTarifaPorHoras(horasRestantes);
         }
-
         return total;
     }
 
-    // Calcular el total basado en el tiempo transcurrido
-    const total = calcularTarifa(horasCompletas, minutosRestantes);
+    // Calcular el total
+    const total = calcularTarifaPorHoras(tiempoRedondeado);
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = horasCompletas + 'h ' + minutosRestantes + 'm';
+        entrada.tiempo = tiempoRedondeado * 60; // Almacenar el tiempo en minutos
         entrada.finalizado = true;
         entrada.total = total;
 
@@ -320,10 +329,11 @@ const SalidaAuto = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            msg: 'Error al procesar la salida del vehículo'
+            msg: 'Hable con el administrador'
         });
     }
 };
+
 
 
 // Función para redondear el tiempo en función de 'fraccionado'
