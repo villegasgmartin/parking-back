@@ -7,8 +7,7 @@ const UserSchema = new Schema({
         required: [true, 'El vehiculo es requerido']
     },
     clase: {
-        type: String,
-        required: [true, 'La clase es requerido']
+        type: String
     },
     admin: [
         { type: Schema.Types.ObjectId, ref: 'Admin_Parking' }
@@ -25,17 +24,21 @@ const UserSchema = new Schema({
         type: Number,
         default: 1
     },
+
     fraccionado1: {
         type: Number,
-        default: 60
+       default: 6 
+       //horas 0-23
     },
     fraccionado2: {
         type: Number,
-        default: 60
+        default: 6
+        //horas 0-23
     },
     tolerancia:{
         type: Number,
         default: 15
+        //min 0-59
     }
 });
 

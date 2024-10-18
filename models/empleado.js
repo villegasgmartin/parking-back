@@ -70,7 +70,6 @@ const UserSchema = Schema({
     imagenes:{
         type: Boolean,
         default: false,
-      
     }
   
 

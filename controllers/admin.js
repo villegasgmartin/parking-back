@@ -21,7 +21,7 @@ const Vehiculo = require('../models/vehiculo');
 const Registro = require('../models/registro');
 const Comunicado = require('../models/comunicado');
 const Convenio = require('../models/convenio');
-const Tarifa = require('../models/tarifas');
+
 
 
 
@@ -123,16 +123,19 @@ const actualizarSucursal = async (req, res = response) => {
 /*********************Ingresos y Egresos Autos**************/
 
 const precioInicial = async(req, res) => {
-    let {clase, precioregular,segundoprecio, tercerprecio, fraccionado1,fraccionado2, vehiculo } = req.body
+    let {clase, precioregular,segundoprecio, tercerprecio, fraccionado1,fraccionado2, vehiculo, tolerancia } = req.body
     const sucursalId = req.query.sucursal;
     const query = {sucursal:sucursalId, clase:clase, vehiculo:vehiculo}
 
     try {
         const clase = await Vehiculo.findOne(query)
         console.log(clase)
-        clase.tarifa.push(precioregular,segundoprecio, tercerprecio)
+        clase.tarifa[0]= precioregular;
+        clase.tarifa[1]= segundoprecio;
+        clase.tarifa[2]= tercerprecio;
         clase.fraccionado1 = fraccionado1;
         clase.fraccionado2 = fraccionado2;
+        clase.tolerancia = tolerancia
         await clase.save()
 
         res.status(200).json({
@@ -459,9 +462,9 @@ const metodoPago = async(req, res) =>{
 //actualizar fraccionado y aumento
 
 const actualizarAumentos = async( req, res)=>{
-    let {clase, precioregular,segundoprecio, tercerprecio} = req.body;
+    let {clase, aumento, vehiculo} = req.body;
     const sucursalId = req.query.sucursalId
-    const query2 = { sucursal: sucursalId, clase:clase}
+    const query2 = { sucursal: sucursalId, clase:clase, vehiculo}
 
     try {
         const tarifa = await Vehiculo.findOne(query2);
@@ -471,9 +474,9 @@ const actualizarAumentos = async( req, res)=>{
 
         const increase = 1 + (aumento/100);
 
-        tarifa.precioregular = precioregular*increase;
-        tarifa.segundoprecio = segundoprecio*increase;
-        tarifa.tercerprecio = tercerprecio*increase;
+        tarifa.tarifa[0] = tarifa.tarifa[0]*increase;
+        tarifa.tarifa[1] = tarifa.tarifa[1]*increase;
+        tarifa.tarifa[2] = tarifa.tarifa[2]*increase;
 
         await tarifa.save()
         res.status(200).json({
@@ -516,11 +519,11 @@ const actualizarFraccionado = async( req, res)=>{
 }
 
 
-//ver tarifa por sucursal y clase
+//ver tarifa por sucursal y clase y vehiculo
 const getTarifa = async (req, res) => {
-    const {clase} = req.body;
+    const {clase, vehiculo} = req.body;
     const sucursalId = req.query.sucursalId
-    const query2 = { sucursal: sucursalId, clase:clase}
+    const query2 = { sucursal: sucursalId, clase:clase, vehiculo:vehiculo}
 
     try {
         const tarifa = await Vehiculo.findOne(query2);
@@ -536,6 +539,53 @@ const getTarifa = async (req, res) => {
         });
     }
 }
+
+// clase por vehiculo y sucursal
+const getclases = async (req, res) => {
+    const {vehiculo} = req.body;
+    const sucursalId = req.query.sucursalId
+    const query2 = { sucursal: sucursalId, vehiculo:vehiculo}
+
+    try {
+        const clases = await Vehiculo.distinct('clase', query2);
+       
+        
+        res.status(200).json({
+            clases
+        })
+
+    } catch ( error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
+
+// vehiculos por sucursal
+const getvehiculosPorSucursal = async (req, res) => {
+    
+    const sucursalId = req.query.sucursalId
+    const query2 = { sucursal: sucursalId}
+
+    try {
+        const vehiculos = await Vehiculo.distinct('vehiculo', query2);
+       
+        
+        res.status(200).json({
+            vehiculos
+        })
+
+    } catch ( error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
+
+
+
 
 //borrar ingreso
 
@@ -629,16 +679,17 @@ const obtenerAbonadoporAdmin = async (req, res) =>{
 //crear vehiculo
 const CrearVehiculo = async (req, res = response) => {
         
-    let {admin,...body} = req.body;
+    let {admin,tafia,...body} = req.body;
     const sucursalId = req.query.sucursalId;
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid)
+    tarifa = [1500, 1300, 1200]
     if(!usuarioAdmin){
         return res.status(404).json({
             msg:'debe ser admin para crear convenio'
         })
     }
-    const vehiculo = new Vehiculo({...body,admin:uid, sucursal:sucursalId});
+    const vehiculo = new Vehiculo({...body,admin:uid, sucursal:sucursalId, tarifa});
 
     try {
         await vehiculo.save()
@@ -959,6 +1010,8 @@ module.exports = {
     getEgresos,
     getEgresoPorPatente,
     borrarIngreso,
-    borrarEgreso
+    borrarEgreso,
+    getclases,
+    getvehiculosPorSucursal
 }
 

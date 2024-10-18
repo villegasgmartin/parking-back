@@ -9,7 +9,7 @@ const {
     tieneRole
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal } = require('../controllers/admin');
 const { obtenerGastoporSucursal } = require('../controllers/usuarios');
 
 
@@ -39,6 +39,18 @@ router.post('/nuevo-vehiculo',[
     validarJWT,
     validarCampos
 ],CrearVehiculo );
+
+router.get('/clases',[
+    validarJWT,
+    validarCampos
+], getclases );
+
+router.get('/vehiculos',[
+    validarJWT,
+    validarCampos
+], getvehiculosPorSucursal );
+
+
 
 router.delete('/borrar-vehiculo',[
     validarJWT,
