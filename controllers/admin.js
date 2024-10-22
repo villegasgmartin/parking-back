@@ -710,6 +710,7 @@ const getVehiculo = async (req, res) => {
     const uid = req.uid
 
     const usuario = await Admin.findById(uid);
+    const sucursal = req.query.sucursalId
 
  
     if(!usuario){
@@ -718,7 +719,7 @@ const getVehiculo = async (req, res) => {
         })
     }
     try {
-        const vehiculos = await Vehiculo.find();
+        const vehiculos = await Vehiculo.find({sucursal:sucursal});
         res.json(vehiculos);
     } catch (error) {
         console.error(error);
@@ -730,10 +731,11 @@ const getVehiculo = async (req, res) => {
 //borrar vehiculo
 
 const borrarVehiculo = async (req, res) =>{
-    const vehiculo = req.query.vehiculo
+    const {vehiculo, clase}= req.body
+    const sucursal = req.query.sucursalId
 
     try {
-        const result = await Vehiculo.deleteOne({ vehiculo }).exec();
+        const result = await Vehiculo.deleteOne({ vehiculo, clase, sucursal }).exec();
         if (result.deletedCount === 0) {
             return res.status(404).json({ msg: 'Vehiculo no encontrado' });
         }
