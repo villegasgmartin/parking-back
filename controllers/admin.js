@@ -154,7 +154,7 @@ const precioInicial = async(req, res) => {
 const ingresoAuto = async(req, res) => {
     let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
     const sucursalId = req.query.sucursal;
-
+    console.log("esta es la sucursal", sucursalId)
 
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
@@ -315,6 +315,7 @@ const SalidaAuto = async (req, res) => {
         return total;
     }
 
+    console.log("horas", tiempoRedondeado)
     // Calcular el total
     const total = calcularTarifaPorHoras(tiempoRedondeado);
 
@@ -357,8 +358,6 @@ const getIngreso = async(req, res) => {
     const query = { finalizado: false,sucursal: sucursalId}; 
 
     try {
-        
-        
         const entrada = await Entrada.find(query);
         const reservas =await Reserva.find(query);
         const ingresos = {
@@ -389,9 +388,6 @@ const getEgresos = async(req, res) => {
             salidas,
             reservas
         };
-
-
-
         res.status(200).json({
             egresos
         })
@@ -462,8 +458,10 @@ const metodoPago = async(req, res) =>{
 //actualizar fraccionado y aumento
 
 const actualizarAumentos = async( req, res)=>{
-    let {clase, aumento, vehiculo} = req.body;
+    let {aumento} = req.body;
     const sucursalId = req.query.sucursalId
+    const clase = req.query.clase
+    const vehiculo = req.query.vehiculo
     const query2 = { sucursal: sucursalId, clase:clase, vehiculo}
 
     try {
@@ -521,8 +519,10 @@ const actualizarFraccionado = async( req, res)=>{
 
 //ver tarifa por sucursal y clase y vehiculo
 const getTarifa = async (req, res) => {
-    const {clase, vehiculo} = req.body;
+ 
     const sucursalId = req.query.sucursalId
+    const vehiculo = req.query.vehiculo
+    const clase = req.query.clase
     const query2 = { sucursal: sucursalId, clase:clase, vehiculo:vehiculo}
 
     try {
@@ -542,8 +542,9 @@ const getTarifa = async (req, res) => {
 
 // clase por vehiculo y sucursal
 const getclases = async (req, res) => {
-    const {vehiculo} = req.body;
+    // const {vehiculo} = req.body;
     const sucursalId = req.query.sucursalId
+    const vehiculo = req.query.vehiculo
     const query2 = { sucursal: sucursalId, vehiculo:vehiculo}
 
     try {
