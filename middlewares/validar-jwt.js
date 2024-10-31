@@ -59,7 +59,7 @@ const logout = async (req, res) => {
 const validarJWT = async( req = request, res = response, next ) => {
 
     const token = req.header('x-token');
-    console.log(token);
+  
     if ( !token ) {
         return res.json({ msg: 'Token Invalido' });
     }
