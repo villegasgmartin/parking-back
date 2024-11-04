@@ -752,8 +752,10 @@ const getVehiculo = async (req, res) => {
 //borrar vehiculo
 
 const borrarVehiculo = async (req, res) =>{
-    const {vehiculo, clase}= req.body
     const sucursal = req.query.sucursalId
+    const vehiculo = req.query.vehiculo
+    const clase = req.query.clase
+    console.log(clase, sucursal, vehiculo)
 
     try {
         const result = await Vehiculo.deleteOne({ vehiculo, clase, sucursal }).exec();
