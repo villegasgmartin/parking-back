@@ -78,39 +78,42 @@ const getUsuario = async (req, res) => {
 
 const usuariosPost = async (req, res = response) => {
     try {
-        let { password, ...resto } = req.body;
+        let { password, correo, ...resto } = req.body;
         const sucursalId = req.query.sucursal;
 
+        // Agregar el ID del empleado a la sucursal correspondiente
+        const sucursal = await Sucursal.findById(sucursalId);
+        if (!sucursal) {
+            return res.status(404).json({
+                msg: 'Sucursal no encontrada'
+            });
+        }
 
-         // Agregar el ID del empleado a la sucursal correspondiente
-         const sucursal = await Sucursal.findById(sucursalId);
-         if (!sucursal) {
-             return res.status(404).json({
-                 msg: 'Sucursal no encontrada'
-             });
-         }
- 
-         const sucursalNombre = sucursal.nombre;
+        const sucursalNombre = sucursal.nombre;
+
+        // verificar si existe un empleado con el mismo email
+        const usuario = await Empleado.findById(correo) || await Admin.findById(correo);
+        if (usuario) {
+            return res.status(400).json({
+                msg: 'El email ya está registrado'
+            });
+        }
 
         // Crear el empleado
-        const usuario = new Empleado({ password, ...resto, sucursal: sucursalId, sucursalNombre });
+        const nuevoUsuario = new Empleado({ password, sucursal: sucursalId, sucursalNombre, correo, ...resto });
 
         // Encriptar la contraseña
         const salt = bcryptjs.genSaltSync();
-        usuario.password = bcryptjs.hashSync(password, salt);
+        nuevoUsuario.password = bcryptjs.hashSync(password, salt);
 
         // Guardar el empleado en la base de datos
-        await usuario.save();
+        await nuevoUsuario.save();
 
-       
-        
-        
-
-        sucursal.empleados.push(usuario._id);
+        sucursal.empleados.push(nuevoUsuario._id);
         await sucursal.save();
 
         res.json({
-            usuario
+            usuario: nuevoUsuario
         });
     } catch (error) {
         console.error(error);
@@ -118,7 +121,8 @@ const usuariosPost = async (req, res = response) => {
             msg: 'Hable con el administrador'
         });
     }
-}
+};
+
 const AdminPost = async (req, res = response) => {
         
     let {password, ...resto} = req.body;

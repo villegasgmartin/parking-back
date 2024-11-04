@@ -289,6 +289,9 @@ const SalidaAuto = async (req, res) => {
         if (minutos > tolerancia) {
             return horas + 1; // Se cobra la siguiente hora completa
         }
+        if(minutos < tolerancia && minutos < 60) {
+            return horas + 1;
+        }
         return horas; // Se cobra la hora actual si no se pasó del fraccionado
     }
 
@@ -323,7 +326,7 @@ const SalidaAuto = async (req, res) => {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempoRedondeado * 60; // Almacenar el tiempo en minutos
+        entrada.tiempo = tiempoRedondeado
         entrada.finalizado = true;
         entrada.total = total;
 
@@ -680,17 +683,34 @@ const obtenerAbonadoporAdmin = async (req, res) =>{
 //crear vehiculo
 const CrearVehiculo = async (req, res = response) => {
         
-    let {admin,tafia,...body} = req.body;
+    let {admin,tafia,transporte, clase} = req.body;
     const sucursalId = req.query.sucursalId;
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid)
     tarifa = [1500, 1300, 1200]
+    transporte = transporte.toUpperCase()
+
+    const query = {vehiculo:transporte, clase, sucursal:sucursalId}
+
+    //verificar si hay un auto y clase igual en la sucursal
+    const verificarClase = await Vehiculo.findOne(query)
+   if (verificarClase){
+    clasecomparada = verificarClase.clase
+    if(clasecomparada == clase){
+        
+        return res.status(404).json({
+            msg:'mismo vehiculo y clase en la sucursal'
+        })
+    }
+   }
+    
+
     if(!usuarioAdmin){
         return res.status(404).json({
             msg:'debe ser admin para crear convenio'
         })
     }
-    const vehiculo = new Vehiculo({...body,admin:uid, sucursal:sucursalId, tarifa});
+    const vehiculo = new Vehiculo({vehiculo:transporte, clase,admin:uid, sucursal:sucursalId, tarifa});
 
     try {
         await vehiculo.save()
