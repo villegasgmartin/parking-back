@@ -284,36 +284,66 @@ const SalidaAuto = async (req, res) => {
     const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase:clase});
     const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
 
-    // Función para redondear el tiempo hacia la hora más próxima
-    function redondearTiempo(horas, minutos, tolerancia) {
-        if (minutos > tolerancia) {
-            return horas + 1; // Se cobra la siguiente hora completa
-        }
-        if(minutos < tolerancia && minutos < 60) {
-            return horas + 1;
-        }
-        return horas; // Se cobra la hora actual si no se pasó del fraccionado
+
+    let fraccionadoSuc = 0;
+    const fraccionadoSucursal = await Sucursal.findOne({_id: sucursalId});
+    if (fraccionadoSucursal.fraccionado) {
+        fraccionadoSuc = fraccionadoSucursal.fraccionado;
     }
+    console.log(fraccionadoSucursal, fraccionadoSuc)
+    // Función para calcular el cobro de tiempo con fraccionado y tolerancia
+    function calcularTiempoCobro(horas, minutos, tolerancia) {
+        console.log("valores de entrada", fraccionadoSuc, horas, minutos, tolerancia);
+    
+        if (fraccionadoSuc > 0) {
+            // Caso: minutos son menores que el fraccionado y la tolerancia
+            if (minutos < fraccionadoSuc && minutos < tolerancia) {
+                return horas + fraccionadoSuc / 60; // Suma el fraccionado más pequeño como fracción de hora
+            }
+    
+            // Calculamos la cantidad de fracciones completas
+            let fraccionesCompletas = Math.floor(minutos / fraccionadoSuc);
+            
+            // Verificamos si se pasa de la tolerancia para la fracción actual
+            let minutosRestantes = minutos % fraccionadoSuc;
+            if (minutosRestantes > tolerancia) {
+                fraccionesCompletas += 1; // Sumamos una fracción adicional si se pasa de la tolerancia
+            }
+    
+            // Calculamos el total de horas adicionales en formato decimal
+            let totalMinutos = fraccionesCompletas * fraccionadoSuc;
+            let horasAdicionales = totalMinutos / 60;
+    
+            // Retornamos la suma de horas y las horas adicionales redondeadas a un decimal
+        return parseFloat((horas + horasAdicionales).toFixed(1));
+        } else {
+            // Si no hay fraccionado, cobramos la siguiente hora completa si se pasa de la tolerancia
+            return minutos > tolerancia ? horas + 1 : Math.max(1, horas);
+        }
+    }
+    
+    
+    
 
     // Redondear el tiempo para el cálculo de tarifas
-    const tiempoRedondeado = redondearTiempo(horasCompletas, minutosRestantes, tolerancia);
+    const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
 
     // Función para calcular el costo basado en las horas pasadas
     function calcularTarifaPorHoras(horas) {
         let total = 0;
         if (horas <= 1) {
-            total = tarifa[0]; // Tarifa inicial
+            total = tarifa[0]*horas; // Tarifa inicial
         } else if (horas > 1 && horas <= fraccionado1) {
-            total = tarifa[0] + ((horas - 1) * tarifa[1]); // Tarifa para las primeras 6 horas
+            total = horas* tarifa[0] // Tarifa para las primeras 6 horas
         } else if (horas > fraccionado1 && horas <= fraccionado2) {
-            total = tarifa[0] + (5 * tarifa[1]) + ((horas - 6) * tarifa[2]); // Tarifa para las primeras 12 horas
+            total = ((horas-fraccionado1)*tarifa[1])  + (fraccionado1*tarifa[0]) ; // Tarifa para las primeras 12 horas
         } else if (horas > fraccionado2 && horas <= 24) {
-            total = tarifa[0] + (5 * tarifa[1]) + (6 * tarifa[2]) + ((horas - 12) * tarifa[3]); // Tarifa para 24 horas
+            total = (fraccionado1*tarifa[0]) + ((fraccionado2- fraccionado1)*tarifa[1])+ ((horas-fraccionado2)*tarifa[2]); // Tarifa para 24 horas
         } else {
             // Si se pasan las 24 horas, reiniciar el ciclo de tarifas
             const diasCompletos = Math.floor(horas / 24);
             const horasRestantes = horas % 24;
-            total = (diasCompletos * (tarifa[0] + (5 * tarifa[1]) + (6 * tarifa[2]) + (12 * tarifa[3]))) + calcularTarifaPorHoras(horasRestantes);
+            total = (diasCompletos *tarifa[2]*24)  + calcularTarifaPorHoras(horasRestantes);
         }
         return total;
     }

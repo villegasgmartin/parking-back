@@ -30,7 +30,10 @@ const UserSchema = Schema({
     },
     empleados: [
         { type: Schema.Types.ObjectId, ref: 'Empleado' }
-    ]
+    ],
+    fraccionado:{
+        type: Number
+    }
     
 })
 
