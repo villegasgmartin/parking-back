@@ -154,6 +154,7 @@ const precioInicial = async(req, res) => {
 const ingresoAuto = async(req, res) => {
     let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
     const sucursalId = req.query.sucursal;
+    patente = patente.toUpperCase()
     console.log("esta es la sucursal", sucursalId)
 
     const uid = req.uid
@@ -336,9 +337,9 @@ const SalidaAuto = async (req, res) => {
         } else if (horas > 1 && horas <= fraccionado1) {
             total = horas* tarifa[0] // Tarifa para las primeras 6 horas
         } else if (horas > fraccionado1 && horas <= fraccionado2) {
-            total = ((horas-fraccionado1)*tarifa[1])  + (fraccionado1*tarifa[0]) ; // Tarifa para las primeras 12 horas
+            total = horas*tarifa[1] ; // Tarifa para las primeras 12 horas
         } else if (horas > fraccionado2 && horas <= 24) {
-            total = (fraccionado1*tarifa[0]) + ((fraccionado2- fraccionado1)*tarifa[1])+ ((horas-fraccionado2)*tarifa[2]); // Tarifa para 24 horas
+            total = horas*tarifa[2]; // Tarifa para 24 horas
         } else {
             // Si se pasan las 24 horas, reiniciar el ciclo de tarifas
             const diasCompletos = Math.floor(horas / 24);

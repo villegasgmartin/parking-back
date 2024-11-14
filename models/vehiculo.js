@@ -27,7 +27,7 @@ const UserSchema = new Schema({
 
     fraccionado1: {
         type: Number,
-       default: 6 
+       default: 3 
        //horas 0-23
     },
     fraccionado2: {
