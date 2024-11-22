@@ -110,10 +110,35 @@ const validarJWT = async( req = request, res = response, next ) => {
 
 }
 
+const existeAdminPortoken = async( req = request, res = response, next ) => {
+        const token = req.header('x-token'); 
+        try {
+            
+            const { uid } = jwt.verify( token, process.env.SECRETORPRIVATEKEY );    
+            // leer el usuario que corresponde al uid
+            const usuario = await Admin.findById(uid) ;
+            if( !usuario ) {
+                return res.status(401).json({
+                    msg: 'El usuario no existe o no es un admin'
+                })
+            }
+            req.usuario = usuario;
+            next();
+    
+        } catch (error) {
+    
+            console.log(error);
+            res.status(401).json({
+                msg: 'Token no válido'
+            })
+        }
+}
+
 
 
 
 module.exports = {
     validarJWT,
-    logout
+    logout,
+    existeAdminPortoken
 }

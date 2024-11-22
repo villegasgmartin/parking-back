@@ -38,7 +38,7 @@ class Server {
 
         // Directorio Público
         this.app.use( express.static('public') );
-
+        
 
         //subida de imagenes
 		this.app.use(

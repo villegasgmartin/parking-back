@@ -6,7 +6,8 @@ const {
     validarCampos,
     validarJWT,
     esAdminRole,
-    tieneRole
+    tieneRole,
+    existeAdminPortoken
 } = require('../middlewares');
 
 const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal } = require('../controllers/admin');
@@ -54,16 +55,19 @@ router.get('/vehiculos',[
 
 router.delete('/borrar-vehiculo',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos
 ],borrarVehiculo );
 
 router.get('/registros-sucursal',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos
 ],getRegistros );
 
 router.post('/nuevo-comunicado',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos
 ], CrearComunicado);
 
@@ -115,11 +119,13 @@ router.put('/actualizar-convenio',[
 
 router.put('/actualizar-sucursal',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos 
 ],actualizarSucursal )
 
 router.delete('/borrar-convenio',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos
 ], borrarConvenio);
 
@@ -128,22 +134,26 @@ router.delete('/borrar-convenio',[
 
 router.post('/nuevo-precio',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos
 ], precioInicial);
 
 router.put('/actualizar-aumentos',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos 
 ], actualizarAumentos)
 
 
 router.put('/actualizar-franccionado',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos 
 ], actualizarFraccionado)
 
 router.get('/tarifas',[
     validarJWT,
+    existeAdminPortoken,
     validarCampos 
 ], getTarifa)
 
