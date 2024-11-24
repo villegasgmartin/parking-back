@@ -153,144 +153,147 @@ const precioInicial = async(req, res) => {
 
 }
 
-const ingresoAuto = async(req, res) => {
-    let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
-    const sucursalId = req.query.sucursal;
-    patente = patente.toUpperCase()
-    console.log("esta es la sucursal", sucursalId)
-
-    const uid = req.uid
-    const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
-
-
-    if(!usuarioAdmin){
-        return res.status(404).json({
-            msg:'debe ser admin para ver las sucursales'
-        })
-    }
-
-    //verificar si el vehiculo no esta ingresado 
-
-    const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
-    
-    if (entradaAnterior) {
-        return res.status(404).json({
-            msg: 'El auto ya está ingresado'
-        });
-    }
-
-    //agrego imagen si es que hay
-    if (req.files) {
-		const { tempFilePath } = req.files.imgEntrada;
-
-		const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
-
-		imgEntrada = secure_url;
-	} else {
-		imgEntrada =
-			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
-	}
-    
-       // Obtener la fecha y hora actual con la zona horaria de Argentina
-
-        const fecha = new Date();
-
-        // Formatear la hora a la zona horaria de Argentina (GMT-3)
-        const options = {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false, // Para mostrar la hora en formato 24 horas
-        };
-        // Obtener la hora formateada
-        horaEntrada = fecha.toLocaleTimeString('es-AR', options);
-    
-
-    try {
-        const ingreso = new Entrada({imgEntrada,fechaEntrada:fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId, patente:patente});
-        await ingreso.save();
-        res.status(200).json(ingreso);
-        
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            msg: 'Hable con el administrador'
-        });
-    }
-
-
-}
-
-// const ingresoAuto = async (req, res) => {
-//     let { imgEntrada, fechaEntrada, horaEntrada, ...rest } = req.body;
+// const ingresoAuto = async(req, res) => {
+//     let {patente, imgEntrada,fechaEntrada, horaEntrada, ...rest} = req.body;
 //     const sucursalId = req.query.sucursal;
+//     patente = patente.toUpperCase()
+//     console.log("esta es la sucursal", sucursalId)
 
-//     const uid = req.uid;
+//     const uid = req.uid
 //     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
 
-//     if (!usuarioAdmin) {
-//         return res.status(404).json({
-//             msg: 'Debe ser admin para ver las sucursales'
-//         });
-//     }
-    
-    
 
-//     if (!req.files || !req.files.imgEntrada) {
-//         return res.status(400).json({
-//             msg: 'La imagen de la patente es obligatoria'
+//     if(!usuarioAdmin){
+//         return res.status(404).json({
+//             msg:'debe ser admin para ver las sucursales'
+//         })
+//     }
+
+//     //verificar si el vehiculo no esta ingresado 
+
+//     const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
+    
+//     if (entradaAnterior) {
+//         return res.status(404).json({
+//             msg: 'El auto ya está ingresado'
 //         });
 //     }
+
+//     //agrego imagen si es que hay
+//     if (req.files) {
+// 		const { tempFilePath } = req.files.imgEntrada;
+
+// 		const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+
+// 		imgEntrada = secure_url;
+// 	} else {
+// 		imgEntrada =
+// 			'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
+// 	}
+    
+//        // Obtener la fecha y hora actual con la zona horaria de Argentina
+
+//         const fecha = new Date();
+
+//         // Formatear la hora a la zona horaria de Argentina (GMT-3)
+//         const options = {
+//         timeZone: 'America/Argentina/Buenos_Aires',
+//         hour: '2-digit',
+//         minute: '2-digit',
+//         hour12: false, // Para mostrar la hora en formato 24 horas
+//         };
+//         // Obtener la hora formateada
+//         horaEntrada = fecha.toLocaleTimeString('es-AR', options);
+    
 
 //     try {
-//         // Subir imagen a Cloudinary
-//         const { tempFilePath } = req.files.imgEntrada;
-//         const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
-//         imgEntrada = secure_url;
-
-//         console.log("tempFilePath", tempFilePath)
-
-//         // Procesar la imagen para extraer la patente
-//         const ocrResult = await tesseract.recognize(tempFilePath, 'eng');
-//         let patente = ocrResult.data.text.replace(/\s+/g, '').toUpperCase(); // Limpia espacios y estandariza
-//         // Valida formato de patente (Argentina)
-//         const patenteRegex = /^[A-Z]{2}\d{3}[A-Z]{2}$/; // Ej: AB123CD
-//         if (!patenteRegex.test(patente)) {
-//             return res.status(400).json({
-//                 msg: 'No se pudo extraer una patente válida de la imagen'
-//             });
-//         }
-
-//         // Verificar si el vehículo ya está ingresado
-//         const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
-//         if (entradaAnterior) {
-//             return res.status(400).json({
-//                 msg: 'El auto ya está ingresado'
-//             });
-//         }
-
-//         // Obtener fecha y hora actuales (Argentina)
-//         const fecha = new Date();
-//         const options = {
-//             timeZone: 'America/Argentina/Buenos_Aires',
-//             hour: '2-digit',
-//             minute: '2-digit',
-//             hour12: false,
-//         };
-//         horaEntrada = fecha.toLocaleTimeString('es-AR', options);
-
-//         // Crear registro de entrada
-//         const ingreso = new Entrada({ imgEntrada, fechaEntrada: fecha, horaEntrada, ...rest, empleados: uid, sucursal: sucursalId, patente });
+//         const ingreso = new Entrada({imgEntrada,fechaEntrada:fecha, horaEntrada, ...rest, empleados:uid, sucursal:sucursalId, patente:patente});
 //         await ingreso.save();
-
 //         res.status(200).json(ingreso);
+        
 //     } catch (error) {
 //         console.error(error);
 //         res.status(500).json({
-//             msg: 'Error al procesar la solicitud, contacte al administrador'
+//             msg: 'Hable con el administrador'
 //         });
 //     }
-// };
+
+
+// }
+
+const ingresoAuto = async (req, res) => {
+    try {
+        let { imgEntrada, fechaEntrada, horaEntrada, ...rest } = req.body;
+        const sucursalId = req.query.sucursal;
+
+        const uid = req.uid;
+        const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+
+        if (!usuarioAdmin) {
+            return res.status(404).json({ msg: 'Debe ser admin para ver las sucursales' });
+        }
+
+        if (!req.files || !req.files.imgEntrada) {
+            return res.status(400).json({ msg: 'La imagen de la patente es obligatoria' });
+        }
+
+        console.log("Archivo recibido:", req.files);
+
+        // Subir imagen a Cloudinary
+        const { tempFilePath } = req.files.imgEntrada;
+        const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+        imgEntrada = secure_url;
+
+        console.log("URL de Cloudinary:", secure_url);
+
+        // Procesar la imagen para extraer la patente
+        const ocrResult = await tesseract.recognize(tempFilePath, 'eng');
+        console.log("Resultado OCR:", ocrResult);
+
+        let patente = ocrResult.data.text.replace(/\s+/g, '').toUpperCase();
+        console.log("Patente extraída:", patente);
+
+        // Validar que solo contenga letras y números
+        const patenteRegex = /^[A-Za-z0-9]+$/;
+        if (!patenteRegex.test(patente)) {
+            return res.status(400).json({ msg: 'La patente contiene caracteres inválidos' });
+        }
+
+        // Verificar si el vehículo ya está ingresado
+        const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
+        if (entradaAnterior) {
+            return res.status(400).json({ msg: 'El auto ya está ingresado' });
+        }
+
+        // Obtener fecha y hora actuales
+        const fecha = new Date();
+        const options = {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        };
+        horaEntrada = fecha.toLocaleTimeString('es-AR', options);
+
+        // Crear registro de entrada
+        const ingreso = new Entrada({
+            imgEntrada,
+            fechaEntrada: fecha,
+            horaEntrada,
+            ...rest,
+            empleados: uid,
+            sucursal: sucursalId,
+            patente,
+        });
+        await ingreso.save();
+
+        res.status(200).json(ingreso);
+    } catch (error) {
+        console.error("Error procesando la solicitud:", error);
+        res.status(500).json({ msg: 'Error al procesar la solicitud, contacte al administrador' });
+    }
+};
+
 
 
 
