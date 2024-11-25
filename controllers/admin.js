@@ -221,9 +221,10 @@ const precioInicial = async(req, res) => {
 
 // }
 
+
 const ingresoAuto = async (req, res) => {
     try {
-        let { imgEntrada, fechaEntrada, horaEntrada, ...rest } = req.body;
+        let { imgEntrada, fechaEntrada, horaEntrada, patente: patenteInput, ...rest } = req.body;
         const sucursalId = req.query.sucursal;
 
         const uid = req.uid;
@@ -233,36 +234,57 @@ const ingresoAuto = async (req, res) => {
             return res.status(404).json({ msg: 'Debe ser admin para ver las sucursales' });
         }
 
-        if (!req.files || !req.files.imgEntrada) {
-            return res.status(400).json({ msg: 'La imagen de la patente es obligatoria' });
+        let imgDefault = 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
+        let patenteOCR = null;
+
+        if (req.files && req.files.imgEntrada) {
+            console.log("Archivo recibido:", req.files);
+
+            // Subir imagen a Cloudinary
+            const { tempFilePath } = req.files.imgEntrada;
+            const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+            imgEntrada = secure_url;
+
+            console.log("URL de Cloudinary:", secure_url);
+
+            // Procesar la imagen para extraer la patente
+            const ocrResult = await tesseract.recognize(tempFilePath, 'eng');
+            console.log("Resultado OCR:", ocrResult);
+
+            patenteOCR = ocrResult.data.text.replace(/\s+/g, '').toUpperCase();
+            console.log("Patente extraída por OCR:", patenteOCR);
+
+            // Validar que solo contenga letras y números
+            const patenteRegex = /^[A-Za-z0-9]+$/;
+            if (patenteOCR && !patenteRegex.test(patenteOCR)) {
+                console.warn("La patente extraída de la imagen no cumple el formato válido. Se ignorará.");
+                patenteOCR = null;
+            }
+        } else {
+            // Usar imagen predeterminada si no se proporciona una
+            imgEntrada = imgDefault;
         }
 
-        console.log("Archivo recibido:", req.files);
+        // Usar la patente del input si existe
+        const patente = patenteInput ? patenteInput.toUpperCase() : patenteOCR;
 
-        // Subir imagen a Cloudinary
-        const { tempFilePath } = req.files.imgEntrada;
-        const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
-        imgEntrada = secure_url;
-
-        console.log("URL de Cloudinary:", secure_url);
-
-        // Procesar la imagen para extraer la patente
-        const ocrResult = await tesseract.recognize(tempFilePath, 'eng');
-        console.log("Resultado OCR:", ocrResult);
-
-        let patente = ocrResult.data.text.replace(/\s+/g, '').toUpperCase();
-        console.log("Patente extraída:", patente);
-
-        // Validar que solo contenga letras y números
-        const patenteRegex = /^[A-Za-z0-9]+$/;
-        if (!patenteRegex.test(patente)) {
-            return res.status(400).json({ msg: 'La patente contiene caracteres inválidos' });
+        if (!patente) {
+            return res.status(400).json({
+                msg: 'Debe proporcionar una patente válida (ya sea en el input o extraída de la imagen)'
+            });
         }
 
         // Verificar si el vehículo ya está ingresado
-        const entradaAnterior = await Entrada.findOne({ patente: patente, finalizado: false });
+        const entradaAnterior = await Entrada.findOne({ patente, finalizado: false });
         if (entradaAnterior) {
             return res.status(400).json({ msg: 'El auto ya está ingresado' });
+        }
+
+        // Validar consistencia entre patente del input y OCR
+        if (patenteInput && patenteOCR && patenteInput.toUpperCase() !== patenteOCR) {
+            return res.status(400).json({
+                msg: 'La patente proporcionada no coincide con la extraída de la imagen'
+            });
         }
 
         // Obtener fecha y hora actuales
@@ -293,6 +315,9 @@ const ingresoAuto = async (req, res) => {
         res.status(500).json({ msg: 'Error al procesar la solicitud, contacte al administrador' });
     }
 };
+
+
+
 
 
 
