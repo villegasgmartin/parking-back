@@ -326,14 +326,11 @@ const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
     const sucursalId = req.query.sucursalId;
     const query = { finalizado: false, patente: patente, sucursal: sucursalId };
-    const query2 = { sucursal: sucursalId };
 
     // Obtener el registro de entrada
     const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
 
-    if (!mercadoPago) {
-        mercadoPago = false;
-    }
+    if (!mercadoPago) mercadoPago = false;
 
     let fechaEntrada, horaEntrada;
     if (entrada.tipo === 'Reserva') {
@@ -383,83 +380,76 @@ const SalidaAuto = async (req, res) => {
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
     // Verificar el fraccionado y redondear el tiempo si es necesario
-    const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase:clase});
+    const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
     const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
 
-
     let fraccionadoSuc = 0;
-    const fraccionadoSucursal = await Sucursal.findOne({_id: sucursalId});
+    const fraccionadoSucursal = await Sucursal.findOne({ _id: sucursalId });
     if (fraccionadoSucursal.fraccionado) {
         fraccionadoSuc = fraccionadoSucursal.fraccionado;
     }
-    console.log(fraccionadoSucursal, fraccionadoSuc)
-    // Función para calcular el cobro de tiempo con fraccionado y tolerancia
+
+    // Función para calcular el tiempo con fraccionado y tolerancia
     function calcularTiempoCobro(horas, minutos, tolerancia) {
-        console.log("valores de entrada", fraccionadoSuc, horas, minutos, tolerancia);
-    
         if (fraccionadoSuc > 0) {
-            // Caso: minutos son menores que el fraccionado y la tolerancia
             if (minutos < fraccionadoSuc && minutos < tolerancia) {
-                return horas + fraccionadoSuc / 60; // Suma el fraccionado más pequeño como fracción de hora
+                return horas + fraccionadoSuc / 60;
             }
-    
-            // Calculamos la cantidad de fracciones completas
+
             let fraccionesCompletas = Math.floor(minutos / fraccionadoSuc);
-            
-            // Verificamos si se pasa de la tolerancia para la fracción actual
             let minutosRestantes = minutos % fraccionadoSuc;
             if (minutosRestantes > tolerancia) {
-                fraccionesCompletas += 1; // Sumamos una fracción adicional si se pasa de la tolerancia
+                fraccionesCompletas += 1;
             }
-    
-            // Calculamos el total de horas adicionales en formato decimal
+
             let totalMinutos = fraccionesCompletas * fraccionadoSuc;
             let horasAdicionales = totalMinutos / 60;
-    
-            // Retornamos la suma de horas y las horas adicionales redondeadas a un decimal
-        return parseFloat((horas + horasAdicionales).toFixed(1));
+            return parseFloat((horas + horasAdicionales).toFixed(1));
         } else {
-            // Si no hay fraccionado, cobramos la siguiente hora completa si se pasa de la tolerancia
             return minutos > tolerancia ? horas + 1 : Math.max(1, horas);
         }
     }
-    
-    
-    
 
-    // Redondear el tiempo para el cálculo de tarifas
     const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
-    console.log("tiempo", horasCompletas, minutosRestantes, tolerancia);
-    console.log("tarifas", tarifa[0], tarifa[1], tarifa[2]);
+
     // Función para calcular el costo basado en las horas pasadas
-    function calcularTarifaPorHoras(horas) {
+    function calcularTarifaPorHoras(horas, tolerancia, fraccionado1, fraccionado2, tarifa) {
         let total = 0;
-        if (horas <= 1) {
-            total = tarifa[0]*horas; // Tarifa inicial
-        } else if (horas > 1 && horas <= fraccionado1) {
-            total = horas* tarifa[0] // Tarifa para las primeras 6 horas
-        } else if (horas > fraccionado1 && horas <= fraccionado2) {
-            total = horas*tarifa[1] ; // Tarifa para las primeras 12 horas
-        } else if (horas > fraccionado2 && horas <= 24) {
-            total = horas*tarifa[2]; // Tarifa para 24 horas
-        } else {
-            // Si se pasan las 24 horas, reiniciar el ciclo de tarifas
+
+        if (horas > 24) {
             const diasCompletos = Math.floor(horas / 24);
+            total += diasCompletos * tarifa[2];
+
             const horasRestantes = horas % 24;
-            total = (diasCompletos *tarifa[2]*24)  + calcularTarifaPorHoras(horasRestantes);
+            if (horasRestantes <= fraccionado1) {
+                total += horasRestantes * tarifa[0];
+            } else if (horasRestantes <= fraccionado2) {
+                total += horasRestantes * tarifa[1];
+            } else {
+                total += horasRestantes * tarifa[2];
+            }
+        } else {
+            if (horas <= 1) {
+                total = tarifa[0];
+            } else if (horas <= fraccionado1) {
+                total = horas * tarifa[0];
+            } else if (horas <= fraccionado2) {
+                total = horas * tarifa[1];
+            } else {
+                total = horas * tarifa[2];
+            }
         }
+
         return total;
     }
 
-    console.log("horas", tiempoRedondeado)
-    // Calcular el total
-    const total = calcularTarifaPorHoras(tiempoRedondeado);
+    const total = calcularTarifaPorHoras(tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa);
 
     try {
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
-        entrada.tiempo = tiempoRedondeado
+        entrada.tiempo = tiempoRedondeado;
         entrada.finalizado = true;
         entrada.total = total;
 
