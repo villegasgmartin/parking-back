@@ -335,11 +335,7 @@ const SalidaAuto = async (req, res) => {
     let fechaEntrada, horaEntrada;
     if (entrada.tipo === 'Reserva') {
         fechaEntrada = entrada.fechaIngreso;
-        horaEntrada = entrada.horaIngreso.toLocaleTimeString('es-AR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
+        horaEntrada = entrada.horaIngreso;
     } else {
         horaEntrada = entrada.horaEntrada;
         fechaEntrada = entrada.fechaEntrada;
@@ -371,7 +367,17 @@ const SalidaAuto = async (req, res) => {
 
     const fechaEntradaConHora = new Date(fechaEntrada);
     const fechaSalidaConHora = new Date(fechaSalida);
+
+    fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
     fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
+
+    // Validar que fechaSalida sea posterior a fechaEntrada
+    if (fechaSalidaConHora < fechaEntradaConHora) {
+        res.status(400).json({
+            msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
+        });
+        return;
+    }
 
     const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
     const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
@@ -388,7 +394,7 @@ const SalidaAuto = async (req, res) => {
     if (fraccionadoSucursal.fraccionado) {
         fraccionadoSuc = fraccionadoSucursal.fraccionado;
     }
-
+    console.log(horaEntrada, horaSalida, horasCompletas, minutosRestantes)
     // Función para calcular el tiempo con fraccionado y tolerancia
     function calcularTiempoCobro(horas, minutos, tolerancia) {
         if (fraccionadoSuc > 0) {
