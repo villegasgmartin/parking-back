@@ -368,22 +368,33 @@ const SalidaAuto = async (req, res) => {
     const fechaEntradaConHora = new Date(fechaEntrada);
     const fechaSalidaConHora = new Date(fechaSalida);
 
+    // Establecer las horas y minutos en los objetos de fecha
     fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
     fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
 
-    // Validar que fechaSalida sea posterior a fechaEntrada
-    if (fechaSalidaConHora < fechaEntradaConHora) {
+    // Validar si es el mismo día
+    const esMismoDia = fechaEntradaConHora.toDateString() === fechaSalidaConHora.toDateString();
+
+    if (!esMismoDia && fechaSalidaConHora < fechaEntradaConHora) {
         res.status(400).json({
             msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
         });
         return;
     }
 
+    // Si es el mismo día, ajustamos la fecha de salida para evitar sumar días innecesarios
+    if (esMismoDia) {
+        fechaSalidaConHora.setDate(fechaEntradaConHora.getDate());
+    }
+
+    // Calcular la diferencia de tiempo
     const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
     const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
 
     const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
+
+    console.log(horaEntrada, horaSalida, horasCompletas, minutosRestantes);
 
     // Verificar el fraccionado y redondear el tiempo si es necesario
     const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
@@ -394,7 +405,7 @@ const SalidaAuto = async (req, res) => {
     if (fraccionadoSucursal.fraccionado) {
         fraccionadoSuc = fraccionadoSucursal.fraccionado;
     }
-    console.log(horaEntrada, horaSalida, horasCompletas, minutosRestantes)
+
     // Función para calcular el tiempo con fraccionado y tolerancia
     function calcularTiempoCobro(horas, minutos, tolerancia) {
         if (fraccionadoSuc > 0) {
