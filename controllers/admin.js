@@ -323,125 +323,126 @@ const ingresoAuto = async (req, res) => {
 
 
 const SalidaAuto = async (req, res) => {
-    let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
-    const sucursalId = req.query.sucursalId;
-    const query = { finalizado: false, patente: patente, sucursal: sucursalId };
-
-    // Obtener el registro de entrada
-    const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
-
-    if (!mercadoPago) mercadoPago = false;
-
-    let fechaEntrada, horaEntrada;
-    if (entrada.tipo === 'Reserva') {
-        fechaEntrada = entrada.fechaIngreso;
-        horaEntrada = entrada.horaIngreso;
-    } else {
-        horaEntrada = entrada.horaEntrada;
-        fechaEntrada = entrada.fechaEntrada;
-    }
-
-    // Obtener la fecha y hora actual
-    const fechaSalida = new Date();
-    const options = {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    };
-    horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
-
-    // Crear objetos Date completos para entrada y salida
-    const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
-    const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
-
-    const fechaEntradaConHora = new Date(fechaEntrada);
-    const fechaSalidaConHora = new Date(fechaSalida);
-
-    fechaEntradaConHora.setHours(entradaHoras, entradaMinutos, 0, 0);
-    fechaSalidaConHora.setHours(salidaHoras, salidaMinutos, 0, 0);
-
-    // Validación de fechas
-    if (fechaSalidaConHora < fechaEntradaConHora) {
-        res.status(400).json({
-            msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
-        });
-        return;
-    }
-
-    // Calcular la diferencia en milisegundos
-    const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
-    const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
-    const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
-    const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
-
-    console.log(horaEntrada, horaSalida, horasCompletas, minutosRestantes);
-
-    // Verificar el fraccionado y redondear el tiempo si es necesario
-    const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
-    const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
-
-    let fraccionadoSuc = 0;
-    const fraccionadoSucursal = await Sucursal.findOne({ _id: sucursalId });
-    if (fraccionadoSucursal.fraccionado) {
-        fraccionadoSuc = fraccionadoSucursal.fraccionado;
-    }
-
-    function calcularTiempoCobro(horas, minutos, tolerancia) {
-        if (fraccionadoSuc > 0) {
-            if (minutos < fraccionadoSuc && minutos < tolerancia) {
-                return horas + fraccionadoSuc / 60;
-            }
-
-            let fraccionesCompletas = Math.floor(minutos / fraccionadoSuc);
-            let minutosRestantes = minutos % fraccionadoSuc;
-            if (minutosRestantes > tolerancia) {
-                fraccionesCompletas += 1;
-            }
-
-            let totalMinutos = fraccionesCompletas * fraccionadoSuc;
-            let horasAdicionales = totalMinutos / 60;
-            return parseFloat((horas + horasAdicionales).toFixed(1));
-        } else {
-            return minutos > tolerancia ? horas + 1 : Math.max(1, horas);
-        }
-    }
-
-    const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
-
-    function calcularTarifaPorHoras(horas, tolerancia, fraccionado1, fraccionado2, tarifa) {
-        let total = 0;
-
-        if (horas > 24) {
-            const diasCompletos = Math.floor(horas / 24);
-            total += diasCompletos * tarifa[2];
-
-            const horasRestantes = horas % 24;
-            if (horasRestantes <= fraccionado1) {
-                total += horasRestantes * tarifa[0];
-            } else if (horasRestantes <= fraccionado2) {
-                total += horasRestantes * tarifa[1];
-            } else {
-                total += horasRestantes * tarifa[2];
-            }
-        } else {
-            if (horas <= 1) {
-                total = tarifa[0];
-            } else if (horas <= fraccionado1) {
-                total = horas * tarifa[0];
-            } else if (horas <= fraccionado2) {
-                total = horas * tarifa[1];
-            } else {
-                total = horas * tarifa[2];
-            }
-        }
-
-        return total;
-    }
-
-    const total = calcularTarifaPorHoras(tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa);
-
     try {
+        let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
+        const sucursalId = req.query.sucursalId;
+
+        // Buscar el registro de entrada del vehículo
+        const query = { finalizado: false, patente: patente, sucursal: sucursalId };
+        const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
+
+        if (!entrada) {
+            return res.status(404).json({ msg: "No se encontró un registro de entrada para esta patente." });
+        }
+
+        // Establecer valores iniciales
+        let fechaEntrada, horaEntrada;
+        if (entrada.tipo === "Reserva") {
+            fechaEntrada = entrada.fechaIngreso;
+            horaEntrada = entrada.horaIngreso;
+        } else {
+            fechaEntrada = entrada.fechaEntrada;
+            horaEntrada = entrada.horaEntrada;
+        }
+
+        // Manejar la imagen de salida
+        let imgSalidaUrl = "https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png";
+        if (req.files && req.files.imgSalida) {
+            const { tempFilePath } = req.files.imgSalida;
+            const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+            imgSalidaUrl = secure_url;
+        }
+
+        // Obtener la fecha y hora actuales
+        const fechaSalida = new Date();
+        const options = {
+            timeZone: "America/Argentina/Buenos_Aires",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        };
+        horaSalida = fechaSalida.toLocaleTimeString("es-AR", options);
+
+        // Convertir las fechas y horas a timestamps
+        const fechaEntradaConHora = new Date(`${fechaEntrada}T${horaEntrada}`).getTime();
+        const fechaSalidaConHora = new Date(`${fechaSalida.toISOString().split("T")[0]}T${horaSalida}`).getTime();
+
+        // Validar que la salida no sea antes de la entrada
+        if (fechaSalidaConHora < fechaEntradaConHora) {
+            return res.status(400).json({ msg: "La hora de salida no puede ser anterior a la de entrada." });
+        }
+
+        // Calcular la diferencia de tiempo en milisegundos
+        const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+        const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Convertir a minutos
+
+        const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
+        const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
+
+        // Cargar datos de tarifas y fraccionados
+        const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
+        const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
+
+        const fraccionadoSucursal = await Sucursal.findOne({ _id: sucursalId });
+        const fraccionadoSuc = fraccionadoSucursal?.fraccionado || 0;
+
+        // Calcular el tiempo con fraccionado y tolerancia
+        function calcularTiempoCobro(horas, minutos, tolerancia) {
+            if (fraccionadoSuc > 0) {
+                if (minutos < fraccionadoSuc && minutos < tolerancia) {
+                    return horas + fraccionadoSuc / 60;
+                }
+
+                let fraccionesCompletas = Math.floor(minutos / fraccionadoSuc);
+                let minutosRestantes = minutos % fraccionadoSuc;
+                if (minutosRestantes > tolerancia) {
+                    fraccionesCompletas += 1;
+                }
+
+                let totalMinutos = fraccionesCompletas * fraccionadoSuc;
+                let horasAdicionales = totalMinutos / 60;
+                return parseFloat((horas + horasAdicionales).toFixed(1));
+            } else {
+                return minutos > tolerancia ? horas + 1 : Math.max(1, horas);
+            }
+        }
+
+        const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
+
+        // Calcular el costo basado en el tiempo redondeado
+        function calcularTarifaPorHoras(horas, tarifa) {
+            let total = 0;
+
+            if (horas > 24) {
+                const diasCompletos = Math.floor(horas / 24);
+                total += diasCompletos * tarifa[2]; // Tarifa diaria
+
+                const horasRestantes = horas % 24;
+                if (horasRestantes <= fraccionado1) {
+                    total += horasRestantes * tarifa[0];
+                } else if (horasRestantes <= fraccionado2) {
+                    total += horasRestantes * tarifa[1];
+                } else {
+                    total += horasRestantes * tarifa[2];
+                }
+            } else {
+                if (horas <= 1) {
+                    total = tarifa[0];
+                } else if (horas <= fraccionado1) {
+                    total = horas * tarifa[0];
+                } else if (horas <= fraccionado2) {
+                    total = horas * tarifa[1];
+                } else {
+                    total = horas * tarifa[2];
+                }
+            }
+
+            return total;
+        }
+
+        const total = calcularTarifaPorHoras(tiempoRedondeado, tarifa);
+
+        // Guardar los datos de salida
         entrada.imgSalida = imgSalidaUrl;
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
@@ -451,14 +452,15 @@ const SalidaAuto = async (req, res) => {
 
         await entrada.save();
 
+        // Retornar los datos actualizados
         res.status(200).json(entrada);
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            msg: 'Hable con el administrador'
-        });
+        res.status(500).json({ msg: "Error interno del servidor. Hable con el administrador." });
     }
 };
+
+
 
 
 
