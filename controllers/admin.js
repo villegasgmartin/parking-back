@@ -341,16 +341,6 @@ const SalidaAuto = async (req, res) => {
         fechaEntrada = entrada.fechaEntrada;
     }
 
-    // Agregar imagen si es que hay
-    let imgSalidaUrl;
-    if (req.files) {
-        const { tempFilePath } = req.files.imgSalida;
-        const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
-        imgSalidaUrl = secure_url;
-    } else {
-        imgSalidaUrl = 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
-    }
-
     // Obtener la fecha y hora actual
     const fechaSalida = new Date();
     const options = {
@@ -361,36 +351,27 @@ const SalidaAuto = async (req, res) => {
     };
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
-    // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
+    // Crear objetos Date completos para entrada y salida
     const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
     const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
 
     const fechaEntradaConHora = new Date(fechaEntrada);
     const fechaSalidaConHora = new Date(fechaSalida);
 
-    // Establecer las horas y minutos en los objetos de fecha
-    fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
-    fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
+    fechaEntradaConHora.setHours(entradaHoras, entradaMinutos, 0, 0);
+    fechaSalidaConHora.setHours(salidaHoras, salidaMinutos, 0, 0);
 
-    // Validar si es el mismo día
-    const esMismoDia = fechaEntradaConHora.toDateString() === fechaSalidaConHora.toDateString();
-
-    if (!esMismoDia && fechaSalidaConHora < fechaEntradaConHora) {
+    // Validación de fechas
+    if (fechaSalidaConHora < fechaEntradaConHora) {
         res.status(400).json({
             msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
         });
         return;
     }
 
-    // Si es el mismo día, ajustamos la fecha de salida para evitar sumar días innecesarios
-    if (esMismoDia) {
-        fechaSalidaConHora.setDate(fechaEntradaConHora.getDate());
-    }
-
-    // Calcular la diferencia de tiempo
+    // Calcular la diferencia en milisegundos
     const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
     const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
-
     const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
@@ -406,7 +387,6 @@ const SalidaAuto = async (req, res) => {
         fraccionadoSuc = fraccionadoSucursal.fraccionado;
     }
 
-    // Función para calcular el tiempo con fraccionado y tolerancia
     function calcularTiempoCobro(horas, minutos, tolerancia) {
         if (fraccionadoSuc > 0) {
             if (minutos < fraccionadoSuc && minutos < tolerancia) {
@@ -429,7 +409,6 @@ const SalidaAuto = async (req, res) => {
 
     const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
 
-    // Función para calcular el costo basado en las horas pasadas
     function calcularTarifaPorHoras(horas, tolerancia, fraccionado1, fraccionado2, tarifa) {
         let total = 0;
 
@@ -480,6 +459,7 @@ const SalidaAuto = async (req, res) => {
         });
     }
 };
+
 
 
 
