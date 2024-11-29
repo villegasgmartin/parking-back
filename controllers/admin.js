@@ -447,7 +447,7 @@ const SalidaAuto = async (req, res) => {
             }
         } else {
             if (horas <= 1) {
-                total = tarifa[0];
+                total = tarifa[0]*horas;
             } else if (horas <= fraccionado1) {
                 total = horas * tarifa[0];
             } else if (horas <= fraccionado2) {
