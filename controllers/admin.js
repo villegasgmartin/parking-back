@@ -394,7 +394,7 @@ const SalidaAuto = async (req, res) => {
     const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
     const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
-    console.log(horaEntrada, horaSalida, horasCompletas, minutosRestantes);
+    console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaSalida, horasCompletas, minutosRestantes);
 
     // Verificar el fraccionado y redondear el tiempo si es necesario
     const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
@@ -435,7 +435,7 @@ const SalidaAuto = async (req, res) => {
 
         if (horas > 24) {
             const diasCompletos = Math.floor(horas / 24);
-            total += diasCompletos * tarifa[2];
+            total += diasCompletos * tarifa[2]*24;
 
             const horasRestantes = horas % 24;
             if (horasRestantes <= fraccionado1) {
