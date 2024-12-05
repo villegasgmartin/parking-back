@@ -435,15 +435,15 @@ const SalidaAuto = async (req, res) => {
 
         if (horas > 24) {
             const diasCompletos = Math.floor(horas / 24);
-            total += diasCompletos * tarifa[2]*24;
+            total += diasCompletos * tarifa[2];
 
             const horasRestantes = horas % 24;
             if (horasRestantes <= fraccionado1) {
                 total += horasRestantes * tarifa[0];
             } else if (horasRestantes <= fraccionado2) {
-                total += horasRestantes * tarifa[1];
+                total += tarifa[1];
             } else {
-                total += horasRestantes * tarifa[2];
+                total += tarifa[2];
             }
         } else {
             if (horas <= 1) {
@@ -451,9 +451,9 @@ const SalidaAuto = async (req, res) => {
             } else if (horas <= fraccionado1) {
                 total = horas * tarifa[0];
             } else if (horas <= fraccionado2) {
-                total = horas * tarifa[1];
+                total = tarifa[1];
             } else {
-                total = horas * tarifa[2];
+                total = tarifa[2];
             }
         }
 
