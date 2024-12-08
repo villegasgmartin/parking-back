@@ -519,6 +519,137 @@ const getIngreso = async(req, res) => {
     }
 }
 
+//get egresos por sucursal para gastos
+const getEgresosSaldos = async (req, res) => {
+    const sucursalId = req.query.sucursal;
+    const mesTexto = req.query.mes; // Mes proporcionado como texto ("enero", "febrero", etc.)
+    const año = req.query.año; // Año proporcionado
+    const query = { finalizado: true, sucursal: sucursalId };
+
+    // Mapeo de meses de texto a números
+    const meses = {
+        enero: 0,
+        febrero: 1,
+        marzo: 2,
+        abril: 3,
+        mayo: 4,
+        junio: 5,
+        julio: 6,
+        agosto: 7,
+        septiembre: 8,
+        octubre: 9,
+        noviembre: 10,
+        diciembre: 11,
+    };
+
+    try {
+        if (mesTexto && año) {
+            const mes = meses[mesTexto.toLowerCase()]; // Convertimos el texto a minúsculas y lo mapeamos
+            if (mes === undefined) {
+                return res.status(400).json({
+                    msg: 'El mes proporcionado no es válido',
+                });
+            }
+
+            // Rango de fechas basado en el mes y año proporcionado
+            const inicioMes = new Date(año, mes, 1); // Primer día del mes
+            const finMes = new Date(año, mes + 1, 0); // Último día del mes
+            query.fechaSalida = { $gte: inicioMes, $lte: finMes }; // Filtro por rango de fechas
+        }
+
+        const salidas = await Entrada.find(query);
+        const reservas = await Reserva.find(query);
+
+        // Calcular los totales
+        const totalSalidas = salidas.reduce((sum, item) => sum + item.total, 0);
+        const totalReservas = reservas.reduce((sum, item) => sum + item.total, 0);
+        const total = totalSalidas + totalReservas;
+
+        const egresos = {
+            salidas,
+            reservas,
+            total,
+        };
+
+        res.status(200).json({
+            egresos,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador',
+        });
+    }
+};
+
+
+//gastos de salidas por usuario
+const getEgresosSaldosEmpleado = async (req, res) => {
+    const sucursalId = req.query.sucursal;
+    const uid = req.uid;
+    const mesTexto = req.query.mes; // Mes proporcionado como texto ("enero", "febrero", etc.)
+    const año = req.query.año; // Año proporcionado
+    const query = { finalizado: true, sucursal: sucursalId, empleados: uid };
+
+    // Mapeo de meses de texto a números
+    const meses = {
+        enero: 0,
+        febrero: 1,
+        marzo: 2,
+        abril: 3,
+        mayo: 4,
+        junio: 5,
+        julio: 6,
+        agosto: 7,
+        septiembre: 8,
+        octubre: 9,
+        noviembre: 10,
+        diciembre: 11,
+    };
+
+    try {
+        if (mesTexto && año) {
+            const mes = meses[mesTexto.toLowerCase()]; // Convertimos el texto a minúsculas y lo mapeamos
+            if (mes === undefined) {
+                return res.status(400).json({
+                    msg: 'El mes proporcionado no es válido',
+                });
+            }
+
+            // Rango de fechas basado en el mes y año proporcionado
+            const inicioMes = new Date(año, mes, 1); // Primer día del mes
+            const finMes = new Date(año, mes + 1, 0); // Último día del mes
+            query.fechaSalida = { $gte: inicioMes, $lte: finMes }; // Filtro por rango de fechas
+        }
+
+        const salidas = await Entrada.find(query);
+        const reservas = await Reserva.find(query);
+
+        // Calcular los totales
+        const totalSalidas = salidas.reduce((sum, item) => sum + item.total, 0);
+        const totalReservas = reservas.reduce((sum, item) => sum + item.total, 0);
+        const total = totalSalidas + totalReservas;
+
+        const egresos = {
+            salidas,
+            reservas,
+            total,
+        };
+
+        res.status(200).json({
+            egresos,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador',
+        });
+    }
+};
+
+
+
+
 //get egresos
 const getEgresos = async(req, res) => {
     const sucursalId = req.query.sucursal
@@ -1173,10 +1304,13 @@ module.exports = {
     getTarifa,
     getIngreso,
     getEgresos,
+    getEgresosSaldos,
     getEgresoPorPatente,
     borrarIngreso,
     borrarEgreso,
     getclases,
-    getvehiculosPorSucursal
+    getvehiculosPorSucursal,
+    getEgresosSaldosEmpleado
+    
 }
 

@@ -10,7 +10,7 @@ const {
     existeAdminPortoken
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado } = require('../controllers/admin');
 const { obtenerGastoporSucursal } = require('../controllers/usuarios');
 
 
@@ -110,7 +110,17 @@ router.get('/get-vehiculos',[
 router.get('/gastos-sucursal',[
     validarJWT,
     validarCampos
-],obtenerGastoporSucursal)
+],obtenerGastoporSucursal);
+
+router.get('/gastos-administrativos',[
+    validarJWT,
+    validarCampos
+],getEgresosSaldos)
+
+router.get('/gastos-administrativos-empledo',[
+    validarJWT,
+    validarCampos
+],getEgresosSaldosEmpleado)
 
 router.put('/actualizar-convenio',[
     validarJWT,

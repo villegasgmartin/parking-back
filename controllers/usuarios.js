@@ -326,7 +326,7 @@ const obtenerAbonadoporUsuario = async (req, res) =>{
 //crear Gasto
 
 const crearGasto = async(req, res) => {
-    const {empleado, sucursal, ...body } = req.body;
+    const {sucursal, ...body } = req.body;
     const sucursalId = req.query.sucursal;
     console.log(body)
 
@@ -334,7 +334,7 @@ const crearGasto = async(req, res) => {
     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
     if(!usuarioAdmin){
         return res.status(404).json({
-            msg:'debe ser admin para crear abonado'
+            msg:'debe estar logeado para crear gasto'
         })
     }
 
@@ -342,7 +342,7 @@ const crearGasto = async(req, res) => {
     if(trabajador){
         if(!trabajador.saldos){
             return res.status(404).json({
-                msg:'debe estar habilitado para crear abonado'
+                msg:'debe estar habilitado para crear gastos'
             });  
         }
     }
