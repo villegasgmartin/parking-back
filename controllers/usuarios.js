@@ -370,54 +370,132 @@ const crearGasto = async(req, res) => {
 }
 
 //obtener los gastos solo para ese empleado
-const obtenerGastoporUsuario = async (req, res) =>{
+const obtenerGastoporUsuario = async (req, res) => {
     const sucursalId = req.query.sucursal;
-    const uid = req.uid
+    const mesTexto = req.query.mes; // Mes como texto ("enero", "febrero", etc.)
+    const año = req.query.año; // Año como número
+    const uid = req.uid;
 
-    const query = {empleados: uid, sucursal: sucursalId}
-    const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
+    const query = { empleados: uid, sucursal: sucursalId };
 
- 
-    if(!usuario){
-        return res.status(404).json({
-            msg:'debe tener permiso para ver reservas'
-        })
-    }
+    // Mapeo de meses de texto a índices
+    const meses = {
+        enero: 0,
+        febrero: 1,
+        marzo: 2,
+        abril: 3,
+        mayo: 4,
+        junio: 5,
+        julio: 6,
+        agosto: 7,
+        septiembre: 8,
+        octubre: 9,
+        noviembre: 10,
+        diciembre: 11,
+    };
+
     try {
+        // Verificar permisos del usuario
+        const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
+        if (!usuario) {
+            return res.status(404).json({
+                msg: 'Debe tener permiso para ver reservas',
+            });
+        }
+
+        // Aplicar filtro de fecha si mes y año están presentes
+        if (mesTexto && año) {
+            const mes = meses[mesTexto.toLowerCase()]; // Convertir el texto a minúsculas y mapear
+            if (mes === undefined) {
+                return res.status(400).json({
+                    msg: 'El mes proporcionado no es válido',
+                });
+            }
+
+            // Crear rango de fechas
+            const inicioMes = new Date(año, mes, 1); // Primer día del mes
+            const finMes = new Date(año, mes + 1, 0); // Último día del mes
+            query.Fecha = { $gte: inicioMes, $lte: finMes };
+        }
+
+        console.log(mesTexto,año )
+
+        // Buscar gastos con el filtro
         const gastos = await Gasto.find(query);
+
         res.json(gastos);
     } catch (error) {
         console.error(error);
-        res.status(404).json({message: error.message});
-
+        res.status(500).json({
+            msg: 'Hable con el administrador',
+        });
     }
-}
+};
+
 
 //obtener los gastos por sucursal
 
-const obtenerGastoporSucursal = async (req, res) =>{
+const obtenerGastoporSucursal = async (req, res) => {
     const sucursalId = req.query.sucursal;
-    const uid = req.uid
+    const mesTexto = req.query.mes; // Mes proporcionado como texto ("enero", "febrero", etc.)
+    const año = req.query.año; // Año proporcionado
+    const uid = req.uid;
+    
 
-    const query = {sucursal: sucursalId}
-    const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
+    const query = { sucursal: sucursalId };
 
- 
-    if(!usuario){
-        return res.status(404).json({
-            msg:'debe tener permiso para ver reservas'
-        })
-    }
-   
+    // Mapeo de meses de texto a números
+    const meses = {
+        enero: 0,
+        febrero: 1,
+        marzo: 2,
+        abril: 3,
+        mayo: 4,
+        junio: 5,
+        julio: 6,
+        agosto: 7,
+        septiembre: 8,
+        octubre: 9,
+        noviembre: 10,
+        diciembre: 11,
+    };
+
     try {
+        // Verificación de permisos
+        const usuario = await Empleado.findById(uid) || await Admin.findById(uid);
+        if (!usuario) {
+            return res.status(404).json({
+                msg: 'Debe tener permiso para ver reservas',
+            });
+        }
+
+        // Aplicar filtro por mes y año si están presentes
+        if (mesTexto && año) {
+            const mes = meses[mesTexto.toLowerCase()]; // Convertir el texto a minúsculas y mapear
+            if (mes === undefined) {
+                return res.status(400).json({
+                    msg: 'El mes proporcionado no es válido',
+                });
+            }
+
+            // Crear el rango de fechas para el mes y año proporcionado
+            const inicioMes = new Date(año, mes, 1); // Primer día del mes
+            const finMes = new Date(año, mes + 1, 0); // Último día del mes
+            query.Fecha = { $gte: inicioMes, $lte: finMes }; // Filtro por rango de fechas
+        }
+
+        // Buscar gastos con el filtro
         const gastos = await Gasto.find(query);
+
         res.json(gastos);
     } catch (error) {
         console.error(error);
-        res.status(404).json({message: error.message});
-
+        res.status(500).json({
+            msg: 'Hable con el administrador',
+        });
     }
-}
+};
+
 
 
 
