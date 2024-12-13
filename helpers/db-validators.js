@@ -1,6 +1,7 @@
 const Rol = require('../models/role');
 //modelos de usuario
-const Empleado = require('../models/empleado')
+const Empleado = require('../models/empleado');
+const Admin = require('../models/usuarioAdmin');
 
 
 const esRoleValido = async(rol = '') => {
@@ -14,7 +15,8 @@ const esRoleValido = async(rol = '') => {
 const emailExiste = async( correo = '' ) => {
 
     // Verificar si el correo existe
-    const existeEmail = await Empleado.findOne({ correo });
+    const existeEmail = await Empleado.findOne({ correo }) || await Admin.findOne({ correo });
+    console.log("correo validado" , existeEmail)
    
 
     if ( existeEmail) {

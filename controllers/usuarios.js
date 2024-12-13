@@ -80,7 +80,7 @@ const usuariosPost = async (req, res = response) => {
     try {
         let { password, correo, ...resto } = req.body;
         const sucursalId = req.query.sucursal;
-
+        console.log("sucursalId: " + sucursalId)
         // Agregar el ID del empleado a la sucursal correspondiente
         const sucursal = await Sucursal.findById(sucursalId);
         if (!sucursal) {
@@ -90,10 +90,12 @@ const usuariosPost = async (req, res = response) => {
         }
 
         const sucursalNombre = sucursal.nombre;
+        
 
         // verificar si existe un empleado con el mismo email
-        const usuario = await Empleado.findById(correo) || await Admin.findById(correo);
-        if (usuario) {
+        const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({ correo });
+       
+        if (usuario){
             return res.status(400).json({
                 msg: 'El email ya está registrado'
             });
