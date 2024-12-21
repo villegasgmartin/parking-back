@@ -27,7 +27,7 @@ const emailExiste = async( correo = '' ) => {
 const existeUsuarioPorId = async( id ) => {
     
     // Verificar si el correo existe
-    const existeUsuario = await Empleado.findById(id);
+    const existeUsuario = await Empleado.findById(id) || await Admin.findById(id);
     
 
 

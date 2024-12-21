@@ -12,31 +12,39 @@ const Abonado = require('../models/abonado');
 const Gasto = require('../models/gasto');
 const Convenio = require('../models/convenio');
 
-const usuariosGetTotal = async(req = request, res = response) => {
+
+const usuariosGetTotal = async (req = request, res = response) => {
     const { limite = 15, desde = 0 } = req.query;
     const sucursal = req.query.sucursal;
     const query = { estado: true, sucursal };
 
     try {
-        // Obtener el conteo total de documentos en las tres colecciones
-        const totalUsuarios = await Promise.all([
+        // Obtener el conteo total de documentos en las dos colecciones
+        const [totalEmpleados, totalAdmins] = await Promise.all([
             Empleado.countDocuments(query),
+            Admin.countDocuments(query)
         ]);
 
-        const total = totalUsuarios;
+        const total = totalEmpleados + totalAdmins;
 
         let usuarios = [];
         let skip = Number(desde);
         let limit = Number(limite);
 
-        // Obtener los usuarios de User_Servicio
-        if (skip < totalUsuarios) {
-            const totalUsuarios = await Empleado.find(query).skip(skip).limit(limit).exec();
-            usuarios = totalUsuarios;
-            limit -= totalUsuarios.length;
+        // Obtener los empleados
+        if (skip < totalEmpleados) {
+            const empleados = await Empleado.find(query).skip(skip).limit(limit).exec();
+            usuarios = usuarios.concat(empleados);
+            limit -= empleados.length;
             skip = 0;
         } else {
-            skip -= totalUsuarios;
+            skip -= totalEmpleados;
+        }
+
+        // Obtener los admins
+        if (limit > 0) {
+            const admins = await Admin.find(query).skip(skip).limit(limit).exec();
+            usuarios = usuarios.concat(admins);
         }
 
         res.json({
@@ -54,12 +62,14 @@ const usuariosGetTotal = async(req = request, res = response) => {
 
 
 
-const getUsuario = async (req, res) => {
-    const {id} = req.query;
 
+const getUsuario = async (req, res) => {
+    const id = req.query.id;
+    console.log("id en funcion", id);
 
     try {
         const usuario =  await Empleado.findById( id ) || await Admin.findById(id) ;
+        console.log("usuario", usuario);
 
         res.status(200).json(usuario)
     } catch (error) {
