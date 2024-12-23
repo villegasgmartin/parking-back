@@ -202,7 +202,7 @@ const usuariosDelete = async(req, res = response) => {
 
 
     // Buscar el usuario en las tres colecciones
-    let user = await Empleado.findById(id)
+    let user = await Empleado.findById(id) || await Admin.findById(id)
 
     if (!user) {
         return res.status(404).json({

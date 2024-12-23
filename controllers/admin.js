@@ -1276,6 +1276,22 @@ const borrarReserva = async (req, res) =>{
     }
 }
 
+//get todos los admin
+const getAdmins = async (req, res) => {
+
+    try {
+        const admins = await Admin.find({estado:true});
+
+        res.status(200).json({
+            admins
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+    }
+}
+
 module.exports = {
     getSucursales,
     crearSucursal,
@@ -1310,7 +1326,7 @@ module.exports = {
     borrarEgreso,
     getclases,
     getvehiculosPorSucursal,
-    getEgresosSaldosEmpleado
-    
+    getEgresosSaldosEmpleado,
+    getAdmins
 }
 
