@@ -33,6 +33,10 @@ const UserSchema = Schema({
     ],
     fraccionado:{
         type: Number
+    },
+    impresion:{
+        type: Number,
+        default: 8
     }
     
 })
