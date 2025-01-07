@@ -691,6 +691,25 @@ const getEgresoPorPatente = async(req, res) => {
         });
     }
 }
+
+//get ingreso por patente
+const getIngresoPorPatente = async(req, res) => {
+    let {patente} = req.query;
+    const query = { finalizado: false, patente}; 
+    console.log(query);
+
+    try {
+        const ingreso = await Entrada.find(query);
+        res.status(200).json({
+            ingreso
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+}
 //obtener link mercado pago
 const metodoPago = async(req, res) =>{
     let {patente, metodoPago} = req.body;
@@ -1327,6 +1346,7 @@ module.exports = {
     getclases,
     getvehiculosPorSucursal,
     getEgresosSaldosEmpleado,
-    getAdmins
+    getAdmins,
+    getIngresoPorPatente
 }
 

@@ -10,7 +10,7 @@ const {
     existeAdminPortoken
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente } = require('../controllers/admin');
 const { obtenerGastoporSucursal } = require('../controllers/usuarios');
 
 
@@ -175,5 +175,6 @@ router.get('/admins',[
     validarCampos 
 ], getAdmins)
 
+router.get('/ingreso-por-patente', getIngresoPorPatente)
 
 module.exports = router;
