@@ -37,6 +37,14 @@ const UserSchema = Schema({
     impresion:{
         type: Number,
         default: 8
+    },
+    datosSucursal:{
+        type:Boolean,
+        default: true,
+    },
+    datosImagenes:{
+        type:Boolean,
+        default: true,
     }
     
 })
