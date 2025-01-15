@@ -88,6 +88,8 @@ const actualizarSucursal = async (req, res = response) => {
     const uid = req.uid;  
     const usuario = await Admin.findById(uid);  
 
+    console.log(sucursalId, usuario, body)
+
     if (!usuario) {
         return res.status(404).json({
             msg: 'Debe tener permiso para actualizar sucursal'
@@ -107,6 +109,8 @@ const actualizarSucursal = async (req, res = response) => {
                 msg: 'Sucursal no encontrada'
             });
         }
+        console.log(sucursal);
+        console.log('actualoizada')
 
         res.json({
             sucursal,
@@ -502,10 +506,15 @@ const getIngreso = async(req, res) => {
 
     try {
         const entrada = await Entrada.find(query);
+        const numeroEntradas = await Entrada.countDocuments(query);
+        const numeroReservas = await Reserva.countDocuments(query);
+
+        const totalingresos = numeroEntradas + numeroReservas;
         const reservas =await Reserva.find(query);
         const ingresos = {
             entrada,
-            reservas
+            reservas,
+            totalingresos
         };
 
         res.status(200).json({
