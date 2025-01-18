@@ -23,6 +23,7 @@ const Vehiculo = require('../models/vehiculo');
 const Registro = require('../models/registro');
 const Comunicado = require('../models/comunicado');
 const Convenio = require('../models/convenio');
+const Repeticion = require('../models/repeticion');
 
 
 
@@ -284,9 +285,19 @@ const ingresoAuto = async (req, res) => {
         }
 
         // Verificar si el vehículo ya está ingresado
-        const entradaAnterior = await Entrada.findOne({ patente, finalizado: false });
-        if (entradaAnterior) {
-            return res.status(400).json({ msg: 'El auto ya está ingresado' });
+        let repeticionPatente = await Repeticion.find();
+        if(!repeticionPatente){
+            repeticionPatente = 2
+        }
+        console.log("repeticiones", repeticionPatente);
+        const entradaSucursal = await Entrada.countDocuments({ patente, finalizado: false , sucursal: sucursalId});
+        const entradasTotales = await Entrada.countDocuments({ patente, finalizado: false , sucursal: sucursalId});
+
+        if (entradaSucursal > 1) {
+            return res.status(400).json({ msg: 'El auto ya está ingresado en la sucursal'});
+        }
+        if (entradasTotales > repeticionPatente) {
+            return res.status(400).json({ msg: 'El auto ya está ingresado '+ entradaAnterior + " veces"});
         }
 
         // Obtener fecha y hora actuales
@@ -320,10 +331,62 @@ const ingresoAuto = async (req, res) => {
 };
 
 
+//post cantidad repeticiones
+
+const agregarRepeticiones = async (req, res) => {
+    const {repeticiones} = req.body;
+
+    try {
+        const repeticion = new Repeticion();
+        const body = {
+            repeticion: repeticiones
+        }
+
+        await repeticion.save(body);
+
+        res.status(200).json(repeticion);
+    } catch (error) {
+        console.error("Error procesando la solicitud:", error);
+        res.status(500).json({ msg: 'Error al procesar la solicitud, contacte al administrador' });
+    }
+}
+
+//get cantidad repeticiones
+
+const getRepeticiones = async (req, res) => {
+   
+
+    try {
+        const repeticion = await Repeticion.findOne()
+
+        res.status(200).json(repeticion);
+    } catch (error) {
+        console.error("Error procesando la solicitud:", error);
+        res.status(500).json({ msg: 'Error al procesar la solicitud, contacte al administrador' });
+    }
+}
+
+//editar repeticion
+const putRepeticiones = async (req, res) => {
+    const {repeticiones} = req.body;
+
+    try {
+        const repeticion = await Repeticion.findOne()
+        
+         // Actualiza la propiedad del documento
+         repeticion.repeticion = repeticiones;
+
+         // Guarda los cambios en la base de datos
+         await repeticion.save();
+
+        res.status(200).json(repeticion)
 
 
-
-
+    } catch (error) {
+        console.error("Error procesando la solicitud:", error);
+        res.status(500).json({ msg: 'Error al procesar la solicitud, contacte al administrador' });
+    }
+}
 
 
 const SalidaAuto = async (req, res) => {
@@ -1356,6 +1419,9 @@ module.exports = {
     getvehiculosPorSucursal,
     getEgresosSaldosEmpleado,
     getAdmins,
-    getIngresoPorPatente
+    getIngresoPorPatente,
+    agregarRepeticiones,
+    getRepeticiones,
+    putRepeticiones
 }
 
