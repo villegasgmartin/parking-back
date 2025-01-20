@@ -505,28 +505,30 @@ const SalidaAuto = async (req, res) => {
             total += diasCompletos * tarifa[2];
 
             const horasRestantes = horas % 24;
+
             if (horasRestantes <= fraccionado1) {
                 total += horasRestantes * tarifa[0];
             } else if (horasRestantes <= fraccionado2) {
-                total += tarifa[1];
+                total += tarifa[1]*horasRestantes;
             } else {
-                total += tarifa[2];
+                total += tarifa[2]*horasRestantes;
             }
+            console.log("tarifa", diasCompletos, total, horasRestantes, tarifa[0], tarifa[1], tarifa[2]);
         } else {
             if (horas <= 1) {
                 total = tarifa[0]*horas;
             } else if (horas <= fraccionado1) {
                 total = horas * tarifa[0];
             } else if (horas <= fraccionado2) {
-                total = tarifa[1];
+                total = tarifa[1]*horas;
             } else {
-                total = tarifa[2];
+                total = tarifa[2]*horas;
             }
         }
 
         return total;
     }
-
+    console.log("dataos tarifa",tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa )
     const total = calcularTarifaPorHoras(tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa);
 
     try {
