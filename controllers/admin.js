@@ -24,11 +24,13 @@ const Registro = require('../models/registro');
 const Comunicado = require('../models/comunicado');
 const Convenio = require('../models/convenio');
 const Repeticion = require('../models/repeticion');
+const Gasto = require('../models/gasto');
 
 
 
 
 const generarLinkDePago = require('../middlewares/mercado-pago');
+const { cierreCaja } = require('../middlewares/nodemailer');
 
 
 
@@ -570,12 +572,12 @@ const getIngreso = async(req, res) => {
     const query = { finalizado: false,sucursal: sucursalId}; 
 
     try {
-        const entrada = await Entrada.find(query);
+        const entrada = await Entrada.find(query).sort({ fechaEntrada: -1 });;
         const numeroEntradas = await Entrada.countDocuments(query);
         const numeroReservas = await Reserva.countDocuments(query);
 
         const totalingresos = numeroEntradas + numeroReservas;
-        const reservas =await Reserva.find(query);
+        const reservas =await Reserva.find(query).sort({ fechaEntrada: -1 });;
         const ingresos = {
             entrada,
             reservas,
@@ -657,6 +659,7 @@ const getEgresosSaldos = async (req, res) => {
 };
 
 
+
 //gastos de salidas por usuario
 const getEgresosSaldosEmpleado = async (req, res) => {
     const sucursalId = req.query.sucursal;
@@ -725,20 +728,41 @@ const getEgresosSaldosEmpleado = async (req, res) => {
 
 
 //get egresos
+
 const getEgresos = async(req, res) => {
+    const uid = req.uid
     const sucursalId = req.query.sucursal
-    const query = { finalizado: true,sucursal: sucursalId}; 
+    const query1 = { finalizado: true,sucursal: sucursalId}; 
+    const query2 = { finalizado: true,sucursal: sucursalId,  empleados: uid, cierreCaja:true}
 
     try {
-        const salidas = await Entrada.find(query);
-        const reservas =await Reserva.find(query);
-        const egresos = {
-            salidas,
-            reservas
-        };
-        res.status(200).json({
-            egresos
-        })
+
+        const usuario =  await Empleado.findById(uid) || await Admin.findById(uid);
+        if(usuario.rol === 'USER_ADMIN'){
+            const salidas = await Entrada.find(query1).sort({ fechaSalida: -1 });
+            const reservas = await Reserva.find(query1).sort({ fechaSalida: -1 });
+            const egresos = {
+                salidas,
+                reservas
+            };
+            res.status(200).json({
+                egresos
+            })
+           
+        }else{
+            const salidas = await Entrada.find(query2).sort({ fechaSalida: -1 });
+            const reservas = await Reserva.find(query2).sort({ fechaSalida: -1 });
+            const egresos = {
+                salidas,
+                reservas
+            };
+            res.status(200).json({
+                egresos
+            })
+        }
+       
+        
+        
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -746,6 +770,100 @@ const getEgresos = async(req, res) => {
         });
     }
 }
+
+//put cierre de caja
+const cierreCajaEmpeado = async (req, res) => {
+    const uid = req.uid; // ID del empleado desde el token
+    const sucursalId = req.query.sucursal;
+    const query = { finalizado: true, sucursal: sucursalId, empleados: uid, cierreCaja:true};
+    const query1 = {sucursal: sucursalId, empleados: uid, cierreCaja:true };
+
+    try {
+     
+
+        const salidas = await Entrada.find(query);
+        const reservas = await Reserva.find(query);
+        // Obtener gastos del usuario
+        const gastos = await Gasto.find(query1);
+
+        // Construir contenido del correo
+        let emailContent = '<h2>Salidas</h2>';
+        let totalGastos = 0;
+
+        if(salidas || reservas){
+            salidas.forEach(salida => {
+                emailContent += `
+                    <p>
+                        <strong>Fecha:</strong> ${salida.fechaSalida}<br>
+                        <strong>Nombre:</strong> ${salida.patente}<br>
+                        <strong>Importe:</strong> $${salida.total}<br>
+                    </p>
+                `;
+                totalGastos += parseFloat(salida.total);
+            });
+            emailContent += '<h2>Salidas Reservas</h2>';
+            reservas.forEach(reserva => {
+                emailContent += `
+                    <p>
+                        <strong>Fecha:</strong> ${reserva.fechaSalida}<br>
+                        <strong>Nombre:</strong> ${reserva.patente}<br>
+                        <strong>Importe:</strong> $${reserva.total}<br>
+                    </p>
+                `;
+                totalGastos += parseFloat(reserva.total);
+            });
+            emailContent += '<h2>Salidas de Gastos</h2>';
+            gastos.forEach(gasto => {
+                emailContent += `
+                    <p>
+                        <strong>Fecha:</strong> ${gasto.Fecha}<br>
+                        <strong>Nombre:</strong> ${gasto.Nombre}<br>
+                        <strong>Importe:</strong> $${gasto.importe}<br>
+                    </p>
+                `;
+                totalGastos += parseFloat(gasto.importe);
+            });
+            
+    
+            emailContent += `<h3>Total Gastos: $${totalGastos.toFixed(2)}</h3>`;
+    
+            //obtener horario de entrada
+            const now = new Date();
+    
+            // Obtener la fecha en formato YYYY-MM-DD
+            const date = now.toISOString().split('T')[0];
+    
+            const empleado = await Empleado.findById(uid)
+            const nombreEmpleado = empleado.nombre
+            
+    
+            cierreCaja(emailContent, nombreEmpleado, date);
+    
+               // Actualizar los ingresos del usuario, estableciendo cierreCaja a false
+               await Entrada.updateMany({ ...query, cierreCaja: true }, { $set: { cierreCaja: false } });
+    
+                // Actualizar los ingresos del usuario, estableciendo cierreCaja a false
+                await Gasto.updateMany({ ...query1, cierreCaja: true }, { $set: { cierreCaja: false } });
+    
+               // Obtener ingresos donde cierreCaja es true (antes de la actualización)
+               const ingresosCierre = await Entrada.find({ ...query, cierreCaja: true });
+    
+            // Responder con los ingresos donde cierreCaja era true
+            res.status(200).json({
+                ingresosCierre,
+                msg: 'Cierre de caja realizado exitosamente, correo enviado.',
+            });
+        }
+
+   
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Error en el cierre de caja',
+        });
+    }
+};
+
 
 //get egresos por patente y sucursal
 const getEgresoPorPatente = async(req, res) => {
@@ -1424,6 +1542,7 @@ module.exports = {
     getIngresoPorPatente,
     agregarRepeticiones,
     getRepeticiones,
-    putRepeticiones
+    putRepeticiones,
+    cierreCajaEmpeado
 }
 

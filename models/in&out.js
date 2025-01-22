@@ -60,6 +60,10 @@ const UserSchema = Schema({
     clase: {
         type: String,
         required: [true, 'La clase es requerido']
+    },
+    cierreCaja:{
+        type:Boolean,
+        default: true
     }
     
 })

@@ -11,7 +11,7 @@ const {
 } = require('../middlewares');
 
 const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente, agregarRepeticiones, getRepeticiones, putRepeticiones } = require('../controllers/admin');
-const { obtenerGastoporSucursal } = require('../controllers/usuarios');
+const { obtenerGastoporSucursal, obtenerGastoporUsuario } = require('../controllers/usuarios');
 
 
 const router = Router();
@@ -197,6 +197,12 @@ router.put('/actualizar-duplicados', [
     existeAdminPortoken,
     validarCampos 
 ],putRepeticiones);
+
+router.get('/gastos-usuario', [
+    validarJWT,
+    check('sucursal', 'No es un ID válido').isMongoId(),
+    validarCampos
+], obtenerGastoporUsuario)
 
 
 module.exports = router;

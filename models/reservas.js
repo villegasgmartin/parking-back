@@ -58,6 +58,10 @@ const UserSchema = new Schema({
     qr:{
       type:String  
     },
+    cierreCaja:{
+        type: Boolean,
+        default: true
+    }
 });
 
 

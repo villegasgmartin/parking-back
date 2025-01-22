@@ -22,7 +22,11 @@ const UserSchema = new Schema({
     ],
     sucursal: [
         { type: Schema.Types.ObjectId, ref: 'Sucursal' }
-    ]
+    ],
+    cierreCaja:{
+        type:Boolean,
+        default: true
+    }
 });
 
 

@@ -27,7 +27,7 @@ const {  usuariosGetTotal,
         obtenerAbonadoporUsuario,
         crearGasto,
         obtenerGastoporUsuario} = require('../controllers/usuarios');
-const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos, getEgresoPorPatente, borrarIngreso, borrarEgreso } = require('../controllers/admin');
+const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos, getEgresoPorPatente, borrarIngreso, borrarEgreso, cierreCajaEmpeado } = require('../controllers/admin');
 
 const router = Router();
 
@@ -185,6 +185,13 @@ router.delete('/borrar-egreso',[
     validarJWT,
     validarCampos 
 ], borrarEgreso)
+
+//cierre caja
+
+router.put('/cerrar-caja',[
+    validarJWT,
+    validarCampos 
+], cierreCajaEmpeado)
 
 
 
