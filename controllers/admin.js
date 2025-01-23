@@ -787,7 +787,7 @@ const cierreCajaEmpeado = async (req, res) => {
         const gastos = await Gasto.find(query1);
 
         // Construir contenido del correo
-        let emailContent = '<h2>Salidas</h2>';
+        let emailContent = '<h2>Salidas - Egresos </h2>';
         let totalGastos = 0;
 
         if(salidas || reservas){

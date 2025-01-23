@@ -19,7 +19,8 @@ let transporter = nodemailer.createTransport({
 function cierreCaja(emailContent, empleado, dia){
   transporter.sendMail({
     from: "villegasgmartin@gmail.com", // verified sender email
-    to: "brendagomez1310@gmail.com",
+    to: "vjtreuthardt@gmail.com",
+    cc: "martinvillegas90@hotmail.com",
     subject: `Cierre caja de ${empleado}`, // Subject line
     text: "cierre de caja " + dia,  // plain text body
     html:  emailContent, // html body
