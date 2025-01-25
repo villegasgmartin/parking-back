@@ -55,6 +55,28 @@ const getSucursales = async (req, res) =>{
 
     }
 }
+//get sucursal por id
+const getSucursalporId = async (req, res) =>{
+    const uid = req.uid
+    const id = req.query.id
+    
+
+    const usuario = await Admin.findById(uid) || await Empleado.findById(uid);
+ 
+    if(!usuario){
+        return res.status(404).json({
+            msg:'debe estar logeado para ver sucursales'
+        })
+    }
+    try {
+        const sucursal = await Sucursal.findById(id);
+        res.json(sucursal);
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({message: error.message});
+
+    }
+}
 
 const crearSucursal = async (req, res) =>{
     const body = req.body;
@@ -1543,6 +1565,7 @@ module.exports = {
     agregarRepeticiones,
     getRepeticiones,
     putRepeticiones,
-    cierreCajaEmpeado
+    cierreCajaEmpeado,
+    getSucursalporId
 }
 

@@ -10,7 +10,7 @@ const {
     existeAdminPortoken
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente, agregarRepeticiones, getRepeticiones, putRepeticiones } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente, agregarRepeticiones, getRepeticiones, putRepeticiones, getSucursalporId } = require('../controllers/admin');
 const { obtenerGastoporSucursal, obtenerGastoporUsuario } = require('../controllers/usuarios');
 
 
@@ -203,6 +203,12 @@ router.get('/gastos-usuario', [
     check('sucursal', 'No es un ID válido').isMongoId(),
     validarCampos
 ], obtenerGastoporUsuario)
+
+//get sucursal  por id para usuario
+router.get('/sucursal-usuario', [
+    validarJWT,
+    validarCampos 
+], getSucursalporId)
 
 
 module.exports = router;
