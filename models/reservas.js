@@ -70,6 +70,16 @@ const UserSchema = new Schema({
         type: String,
         required: [true, 'La clase es requerido']
     },
+    tipoIngreso:{
+        type:String,
+        default: 'Reserva'
+    },
+    EntradaString:{
+        type: String,
+    },
+    SalidaString:{
+        type: String,
+    }
 });
 
 

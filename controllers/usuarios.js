@@ -243,9 +243,24 @@ const usuariosDelete = async(req, res = response) => {
 
 //crear reservas
 
+function formatDate(isoString) {
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
+}
+
 const crearReserva = async(req, res) => {
-    const {empleado, sucursal, ...body } = req.body;
+    let {empleado, sucursal, horaIngreso, horaEgreso,EntradaString, SalidaString, ...body } = req.body;
     const sucursalId = req.query.sucursal;
+    
+    EntradaString = formatDate(horaIngreso)
+    SalidaString = formatDate(horaEgreso)
+
     
 
     const uid = req.uid
@@ -265,7 +280,7 @@ const crearReserva = async(req, res) => {
         }
     }
 
-    const reserva = new Reserva({...body, empleados:uid, sucursal:sucursalId})
+    const reserva = new Reserva({...body, empleados:uid, sucursal:sucursalId, EntradaString, SalidaString, horaIngreso, horaEgreso})
 
     await reserva.save();
     
