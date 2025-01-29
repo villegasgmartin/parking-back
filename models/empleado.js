@@ -28,15 +28,15 @@ const UserSchema = Schema({
         default: true,
       
     },
-    sucursal: {
+    sucursal: [{
         type: Schema.Types.ObjectId,
         ref: 'Sucursal',
         required: true
-    },
-    sucursalNombre:{
+    }],
+    sucursalNombre:[{
         type: String,
         required: [true, 'La sucursal es requerida']
-    },
+    }],
     historial:{
         type: Boolean,
         default: false,

@@ -10,7 +10,7 @@ const {
     existeAdminPortoken
 } = require('../middlewares');
 
-const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente, agregarRepeticiones, getRepeticiones, putRepeticiones, getSucursalporId } = require('../controllers/admin');
+const { crearSucursal, getSucursales, obtenerReservasAdmin, obtenerAbonadoporAdmin, CrearVehiculo, borrarVehiculo, getRegistros, CrearComunicado, borrarComunicado, obtenerConvenio, crearConvenio, VerComunicado, borrarAbonado, borrarReserva, getVehiculo, convenioPut, actualizarSucursal, borrarConvenio, precioInicial, actualizarAumentos, actualizarFraccionado, getTarifa, getclases, getvehiculosPorSucursal, getEgresosSaldos, getEgresosSaldosEmpleado, getAdmins, getIngresoPorPatente, agregarRepeticiones, getRepeticiones, putRepeticiones, getSucursalporId, imprimirFacturaAfip } = require('../controllers/admin');
 const { obtenerGastoporSucursal, obtenerGastoporUsuario } = require('../controllers/usuarios');
 
 
@@ -210,5 +210,10 @@ router.get('/sucursal-usuario', [
     validarCampos 
 ], getSucursalporId)
 
+//imprimir factura afip
+router.get('/imprimir-afip', [
+    validarJWT,
+    validarCampos 
+], imprimirFacturaAfip)
 
 module.exports = router;

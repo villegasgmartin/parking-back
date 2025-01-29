@@ -89,30 +89,47 @@ const getUsuario = async (req, res) => {
 const usuariosPost = async (req, res = response) => {
     try {
         let { password, correo, ...resto } = req.body;
-        const sucursalId = req.query.sucursal;
-        console.log("sucursalId: " + sucursalId)
-        // Agregar el ID del empleado a la sucursal correspondiente
-        const sucursal = await Sucursal.findById(sucursalId);
-        if (!sucursal) {
-            return res.status(404).json({
-                msg: 'Sucursal no encontrada'
+        const sucursalQuery = req.query.sucursal; // Puede ser un solo ID o una lista separada por comas
+
+        console.log("sucursalQuery:", sucursalQuery, password, correo);
+
+        // Validar que se proporcionen sucursales
+        if (!sucursalQuery) {
+            return res.status(400).json({
+                msg: 'Se debe proporcionar al menos una sucursal'
             });
         }
 
-        const sucursalNombre = sucursal.nombre;
-        
+        // Separar los IDs por comas y eliminarlos si hay espacios adicionales
+        const sucursalArray = sucursalQuery.split(',').map(id => id.trim());
 
-        // verificar si existe un empleado con el mismo email
+        // Validar que todas las sucursales existan
+        const sucursales = await Sucursal.find({ _id: { $in: sucursalArray } });
+        if (sucursales.length !== sucursalArray.length) {
+            return res.status(404).json({
+                msg: 'Una o más sucursales no existen'
+            });
+        }
+
+        correo = correo.toLowerCase();
+
+        // Verificar si ya existe un empleado con el mismo correo
         const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({ correo });
-       
-        if (usuario){
+        if (usuario) {
             return res.status(400).json({
                 msg: 'El email ya está registrado'
             });
         }
 
-        // Crear el empleado
-        const nuevoUsuario = new Empleado({ password, sucursal: sucursalId, sucursalNombre, correo, ...resto });
+        // Crear el empleado con las sucursales asociadas
+        const sucursalNombres = sucursales.map(sucursal => sucursal.nombre);
+        const nuevoUsuario = new Empleado({ 
+            password, 
+            sucursal: sucursalArray, // Guardar todos los IDs de sucursales
+            sucursalNombre: sucursalNombres, 
+            correo, 
+            ...resto 
+        });
 
         // Encriptar la contraseña
         const salt = bcryptjs.genSaltSync();
@@ -121,8 +138,11 @@ const usuariosPost = async (req, res = response) => {
         // Guardar el empleado en la base de datos
         await nuevoUsuario.save();
 
-        sucursal.empleados.push(nuevoUsuario._id);
-        await sucursal.save();
+        // Asociar el empleado a cada sucursal
+        for (const sucursal of sucursales) {
+            sucursal.empleados.push(nuevoUsuario._id);
+            await sucursal.save();
+        }
 
         res.json({
             usuario: nuevoUsuario
@@ -134,6 +154,8 @@ const usuariosPost = async (req, res = response) => {
         });
     }
 };
+
+
 
 const AdminPost = async (req, res = response) => {
         
@@ -508,6 +530,34 @@ const obtenerGastoporSucursal = async (req, res) => {
     }
 };
 
+//get sucursales
+const getSucursalesUsuarios = async (req, res) => {
+    const uid = req.uid;
+
+    try {
+        const usuario = await Empleado.findById(uid);
+
+        if (!usuario) {
+            return res.status(404).json({
+                msg: 'Debe ser admin para ver las sucursales',
+            });
+        }
+
+        // Utilizar Promise.all para resolver todas las promesas.
+        const sucursales = await Promise.all(
+            usuario.sucursal.map(async (suc) => {
+                console.log(suc); // Este console.log seguirá funcionando
+                return await Sucursal.findById(suc);
+            })
+        );
+
+        res.json(sucursales);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 
 
 
@@ -526,5 +576,6 @@ module.exports = {
     crearAbonado,
     obtenerGastoporUsuario,
     crearGasto, 
-    obtenerGastoporSucursal
+    obtenerGastoporSucursal,
+    getSucursalesUsuarios
 }

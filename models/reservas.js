@@ -61,7 +61,15 @@ const UserSchema = new Schema({
     cierreCaja:{
         type: Boolean,
         default: true
-    }
+    },
+    tipo:{
+        type: String,
+        default: 'Ingreso'
+    },
+    clase: {
+        type: String,
+        required: [true, 'La clase es requerido']
+    },
 });
 
 

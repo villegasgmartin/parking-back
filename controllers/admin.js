@@ -26,6 +26,8 @@ const Convenio = require('../models/convenio');
 const Repeticion = require('../models/repeticion');
 const Gasto = require('../models/gasto');
 
+const {facturaAfip} = require('../middlewares/afip');
+
 
 
 
@@ -1525,6 +1527,38 @@ const getAdmins = async (req, res) => {
     }
 }
 
+const imprimirFacturaAfip = async (req, res) => {
+    let { patente, tipoDocumento, documentoComprador } = req.body;
+    const sucursalId = req.query.sucursal;
+    const query = { finalizado: true, sucursal: sucursalId, patente };
+
+    try {
+        const egreso = await Entrada.find(query);
+
+        if (!egreso || egreso.length === 0) {
+            return res.status(404).json({ msg: 'No se encontraron registros' });
+        }
+
+        // Obtener y transformar las fechas al formato aaaammdd como número
+        let fechaEntrada = parseInt(egreso[0].fechaEntrada.toISOString().slice(0, 10).replace(/-/g, ''), 10);
+        let fechaSalida = parseInt(egreso[0].fechaSalida.toISOString().slice(0, 10).replace(/-/g, ''), 10);
+        let total = egreso[0].total;
+
+        // await facturaAfip(tipoDocumento, documentoComprador, fechaEntrada, fechaSalida, total);
+        await facturaAfip();
+
+        res.status(200).json({ msg: 'Factura generada con éxito', facturaAfip });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Hable con el administrador'
+        });
+    }
+};
+
+
+
 module.exports = {
     getSucursales,
     crearSucursal,
@@ -1566,6 +1600,7 @@ module.exports = {
     getRepeticiones,
     putRepeticiones,
     cierreCajaEmpeado,
-    getSucursalporId
+    getSucursalporId,
+    imprimirFacturaAfip
 }
 

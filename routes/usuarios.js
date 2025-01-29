@@ -26,7 +26,8 @@ const {  usuariosGetTotal,
         crearAbonado,
         obtenerAbonadoporUsuario,
         crearGasto,
-        obtenerGastoporUsuario} = require('../controllers/usuarios');
+        obtenerGastoporUsuario,
+        getSucursalesUsuarios} = require('../controllers/usuarios');
 const { SalidaAuto, ingresoAuto, metodoPago, actualizarAumentos, actualizarFraccionado, getIngreso, getEgresos, getEgresoPorPatente, borrarIngreso, borrarEgreso, cierreCajaEmpeado } = require('../controllers/admin');
 
 const router = Router();
@@ -193,6 +194,10 @@ router.put('/cerrar-caja',[
     validarCampos 
 ], cierreCajaEmpeado)
 
-
+//get sucursales en empleado
+router.get('/sucursales-empleado',[
+    validarJWT,
+    validarCampos 
+] ,getSucursalesUsuarios)
 
 module.exports = router;

@@ -16,7 +16,6 @@ const { generarJWT } = require('../helpers/generar-jwt');
 const login = async(req, res = response) => {
 
     const { correo, password } = req.body;
-
      // Obtener la IP del cliente
      const clienteIP = req.headers['x-forwarded-for'] || req.ip;
     console.log(clienteIP)
@@ -32,7 +31,7 @@ const login = async(req, res = response) => {
         //  }
       
         // Verificar si el email existe
-        const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({correo}) ;
+        const usuario = await Empleado.findOne({ correo }) || await Admin.findOne({correo});
         if ( !usuario ) {
             return res.status(400).json({
                 msg: 'Usuario / Password no son correctos - correo'
@@ -64,22 +63,22 @@ const login = async(req, res = response) => {
 
         //verificar si es admin o empleado para guardar la hora de ingreso
 
-        const usuarioAdmin = await Admin.findOne({correo})
-        if(!usuarioAdmin){
-            const sucursalUsuario = usuario.sucursal
-            const sucursal = await Sucursal.findById({ _id:new mongoose.Types.ObjectId(sucursalUsuario) });
-            const  sucursalNombre = sucursal.nombre
-            const registro = new Registro({
-                fechaEntrada: date, // Puede ser solo la fecha o también puedes combinarla con la hora
-                HoraEntrada: time,
-                empleados: usuario.id,
-                Nombre: usuario.nombre,
-                NombreSucursal: sucursalNombre,
-                sucursal: usuario.sucursal
-            });
+        // const usuarioAdmin = await Admin.findOne({correo})
+        // if(!usuarioAdmin){
+        //     const sucursalUsuario = usuario.sucursal
+        //     const sucursal = await Sucursal.findById({ _id:new mongoose.Types.ObjectId(sucursalUsuario) });
+        //     const  sucursalNombre = sucursal.nombre
+        //     const registro = new Registro({
+        //         fechaEntrada: date, // Puede ser solo la fecha o también puedes combinarla con la hora
+        //         HoraEntrada: time,
+        //         empleados: usuario.id,
+        //         Nombre: usuario.nombre,
+        //         NombreSucursal: sucursalNombre,
+        //         sucursal: usuario.sucursal
+        //     });
             
-            await registro.save();
-        }
+        //     await registro.save();
+        // }
         
         
 
