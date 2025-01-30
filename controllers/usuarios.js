@@ -178,44 +178,56 @@ const AdminPost = async (req, res = response) => {
 
 
 const usuariosPut = async (req, res = response) => {
+    try {
+        const uid = req.uid;
+        const usuarioAdmin = await Admin.findById(uid);
+        if (!usuarioAdmin) {
+            return res.status(404).json({
+                msg: 'Debe ser admin para actualizar usuarios'
+            });
+        }
 
-    const uid = req.uid
-    const usuarioAdmin = await Admin.findById(uid);
-    if(!usuarioAdmin){
-        return res.status(404).json({
-            msg:'debe ser admin para ver las sucursales'
-        })
+        const { id } = req.query;
+        const { _id, password, sucursal, ...resto } = req.body;
+
+        let user = await Empleado.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                msg: 'Usuario no encontrado'
+            });
+        }
+
+        if (password) {
+            const salt = bcryptjs.genSaltSync();
+            resto.password = bcryptjs.hashSync(password, salt);
+        }
+
+        // Si se envían sucursales en la petición, se reemplaza el array existente
+        if (sucursal && Array.isArray(sucursal)) {
+            const sucursales = await Sucursal.find({ _id: { $in: sucursal } });
+            if (sucursales.length !== sucursal.length) {
+                return res.status(404).json({
+                    msg: 'Una o más sucursales no existen'
+                });
+            }
+            resto.sucursal = sucursal;
+            resto.sucursalNombre = sucursales.map(s => s.nombre);
+        }
+
+        const usuarioActualizado = await Empleado.findByIdAndUpdate(id, resto, { new: true });
+        
+        res.json({
+            usuario: usuarioActualizado,
+            msg: 'Usuario actualizado correctamente'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: 'Error en el servidor'
+        });
     }
+};
 
-
-    const { id } = req.query;
-    console.log(id);
-    const { _id, password, correo, ...resto } = req.body;
-
-     // Buscar el usuario en las tres colecciones
-     let user = await Empleado.findById(id)
-
-     if (!user) {
-         return res.status(404).json({
-             msg: 'Usuario no encontrado'
-         });
-     }
- 
-    
-
-    if ( password ) {
-        // Encriptar la contraseña
-        const salt = bcryptjs.genSaltSync();
-        resto.password = bcryptjs.hashSync( password, salt );
-    }
-
-    
-        usuario = await Empleado.findByIdAndUpdate( id, resto );
-    
-    res.json({usuario,
-        msg: 'Usuario actualizado'
-    } );
-}
 
 
 
