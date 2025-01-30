@@ -47,10 +47,6 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false
     },
-    tipo:{
-        type: String,
-        default: 'Reserva'
-    },
     metodoPago:{
         type: String,
         

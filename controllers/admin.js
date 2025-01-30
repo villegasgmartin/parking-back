@@ -419,16 +419,23 @@ const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
     const sucursalId = req.query.sucursalId;
     const query = { finalizado: false, patente: patente, sucursal: sucursalId };
-
+    console.log("vehiculo", sucursalId, tipo, clase)
     // Obtener el registro de entrada
     const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
 
     if (!mercadoPago) mercadoPago = false;
 
+    const options = {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    };
+
     let fechaEntrada, horaEntrada;
-    if (entrada.tipo === 'Reserva') {
+    if (entrada.tipoIngreso && entrada.tipoIngreso === 'Reserva') {
         fechaEntrada = entrada.fechaIngreso;
-        horaEntrada = entrada.horaIngreso;
+        horaEntrada = entrada.horaIngreso.toLocaleTimeString('es-AR', options);
     } else {
         horaEntrada = entrada.horaEntrada;
         fechaEntrada = entrada.fechaEntrada;
@@ -446,13 +453,10 @@ const SalidaAuto = async (req, res) => {
 
     // Obtener la fecha y hora actual
     const fechaSalida = new Date();
-    const options = {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    };
+    
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
+
+    console.log("horaSalida: " + horaSalida, horaEntrada)
 
     // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
     const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
@@ -1100,17 +1104,21 @@ const getvehiculosPorSucursal = async (req, res) => {
 //borrar ingreso
 
 const borrarIngreso = async (req, res) =>{
+    const sucursal = req.query.sucursal;
     const patente = req.query.patente
-    const query = { patente: patente, finalizado: false }
+    const query = { patente: patente, finalizado: false, sucursal:sucursal }
+    console.log(query)
 
     try {
-        const result = await Entrada.deleteOne(query).exec();
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ msg: 'patente no encontrada' });
+        const resultEntrada = await Entrada.deleteOne(query).exec();
+        const resultReserva = await Reserva.deleteOne(query).exec();
+        
+        if (resultEntrada.deletedCount === 0 && resultReserva.deletedCount === 0) {
+            return res.status(404).json({ msg: 'Patente no encontrada' });
         }
-        res.json({
-            msg: 'Ingreso eliminado'
-        });
+        
+        res.json({ msg: 'Ingreso eliminado' });
+        
     } catch (error) {
         console.error(error);
         res.status(404).json({message: error.message});
