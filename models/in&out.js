@@ -64,6 +64,10 @@ const UserSchema = Schema({
     cierreCaja:{
         type:Boolean,
         default: true
+    },
+    tipoIngreso:{
+        String,
+        default:'IngresoNormal'
     }
     
 })
