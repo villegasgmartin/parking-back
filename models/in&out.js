@@ -66,7 +66,7 @@ const UserSchema = Schema({
         default: true
     },
     tipoIngreso:{
-        String,
+        type:String,
         default:'IngresoNormal'
     }
     
