@@ -25,6 +25,7 @@ function cierreCaja(emailContent, empleado, dia){
     text: "cierre de caja " + dia,  // plain text body
     html:  emailContent, // html body
   }, function(error, info){
+    console.log("api", process.env.SENDGRID_API_KEY?"funciona":"no esta")
     if (error) {
       console.error(error);
     } else {
