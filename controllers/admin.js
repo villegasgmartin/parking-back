@@ -470,28 +470,46 @@ const SalidaAuto = async (req, res) => {
     fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
 
     // Validar si es el mismo día
-    const esMismoDia = fechaEntradaConHora.toDateString() === fechaSalidaConHora.toDateString();
+    // const esMismoDia = fechaEntradaConHora.toDateString() === fechaSalidaConHora.toDateString();
 
-    if (!esMismoDia && fechaSalidaConHora < fechaEntradaConHora) {
-        res.status(400).json({
-            msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
-        });
-        return;
-    }
+    // if (!esMismoDia && fechaSalidaConHora < fechaEntradaConHora) {
+    //     res.status(400).json({
+    //         msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
+    //     });
+    //     return;
+    // }
 
-    // Si es el mismo día, ajustamos la fecha de salida para evitar sumar días innecesarios
-    if (esMismoDia) {
-        fechaSalidaConHora.setDate(fechaEntradaConHora.getDate());
-    }
+    // // Si es el mismo día, ajustamos la fecha de salida para evitar sumar días innecesarios
+    // if (esMismoDia) {
+    //     fechaSalidaConHora.setDate(fechaEntradaConHora.getDate());
+    // }
+
+    // Validar coherencia entre fechas
+        if (fechaSalidaConHora < fechaEntradaConHora) {
+            res.status(400).json({
+                msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
+            });
+            return;
+        }
+
+        // Calcular la diferencia de tiempo
+        const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+        if (diferenciaMs < 0) {
+            res.status(400).json({
+                msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
+            });
+            return;
+        }
 
     // Calcular la diferencia de tiempo
-    const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
-    const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
+    // const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+   // Convertir la diferencia a minutos y horas
+const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
+const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
+const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
 
-    const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
-    const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
+console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaSalida, horasCompletas, minutosRestantes);
 
-    console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaSalida, horasCompletas, minutosRestantes);
 
     // Verificar el fraccionado y redondear el tiempo si es necesario
     const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
