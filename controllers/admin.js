@@ -419,8 +419,7 @@ const SalidaAuto = async (req, res) => {
     let { imgSalida, horaSalida, patente, mercadoPago, tipo, clase, ...rest } = req.body;
     const sucursalId = req.query.sucursalId;
     const query = { finalizado: false, patente: patente, sucursal: sucursalId };
-    console.log("vehiculo", sucursalId, tipo, clase)
-    // Obtener el registro de entrada
+
     const entrada = await Entrada.findOne(query) || await Reserva.findOne(query);
 
     if (!mercadoPago) mercadoPago = false;
@@ -432,96 +431,63 @@ const SalidaAuto = async (req, res) => {
         hour12: false
     };
 
-    let fechaEntrada, horaEntrada;
-    if (entrada.tipoIngreso && entrada.tipoIngreso === 'Reserva') {
-        fechaEntrada = entrada.fechaIngreso;
-        horaEntrada = entrada.horaIngreso.toLocaleTimeString('es-AR', options);
-    } else {
-        horaEntrada = entrada.horaEntrada;
-        fechaEntrada = entrada.fechaEntrada;
-    }
-
-    // Agregar imagen si es que hay
-    let imgSalidaUrl;
-    if (req.files) {
-        const { tempFilePath } = req.files.imgSalida;
-        const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
-        imgSalidaUrl = secure_url;
-    } else {
-        imgSalidaUrl = 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
-    }
-
-    // Obtener la fecha y hora actual
+    // Determinar las fechas y horas relevantes
+    let fechaEntradaConHora, fechaSalidaConHora;
     const fechaSalida = new Date();
-    
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
-    console.log("horaSalida: " + horaSalida, horaEntrada)
+    if (entrada.tipoIngreso && entrada.tipoIngreso === 'Reserva') {
+        // Para reservas, usar la fecha y hora de egreso como base
+        const fechaEgreso = entrada.fechaEgreso;
+        const horaEgreso = entrada.horaEgreso.toLocaleTimeString('es-AR', options);
 
-    // Crear objetos Date para fechaEntrada y fechaSalida con sus respectivas horas
-    const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+        const [egresoHoras, egresoMinutos] = horaEgreso.split(':').map(Number);
+        fechaEntradaConHora = new Date(fechaEgreso);
+        fechaEntradaConHora.setHours(egresoHoras, egresoMinutos);
+        console.log('fechas', fechaSalida,fechaEntradaConHora )
+
+        if (fechaSalida <= fechaEntradaConHora) {
+            // Si la salida es antes o igual al final de la reserva, no se cobra
+            entrada.imgSalida = imgSalida || 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
+            entrada.horaSalida = horaSalida;
+            entrada.fechaSalida = fechaSalida;
+            entrada.tiempo = 0;
+            entrada.finalizado = true;
+            entrada.total = 0;
+
+            await entrada.save();
+            return res.status(200).json({ msg: 'Reserva completada sin costo adicional', entrada });
+        }
+    } else {
+        // Para ingreso por hora, usar la fecha y hora reales de entrada
+        const horaEntrada = entrada.horaEntrada;
+        const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+        fechaEntradaConHora = new Date(entrada.fechaEntrada);
+        fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
+    }
+
     const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
-
-    const fechaEntradaConHora = new Date(fechaEntrada);
-    const fechaSalidaConHora = new Date(fechaSalida);
-
-    // Establecer las horas y minutos en los objetos de fecha
-    fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
+    fechaSalidaConHora = new Date(fechaSalida);
     fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
 
-    // Validar si es el mismo día
-    // const esMismoDia = fechaEntradaConHora.toDateString() === fechaSalidaConHora.toDateString();
+    // Validar coherencia de fechas
+    if (fechaSalidaConHora < fechaEntradaConHora) {
+        return res.status(400).json({ msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.' });
+    }
 
-    // if (!esMismoDia && fechaSalidaConHora < fechaEntradaConHora) {
-    //     res.status(400).json({
-    //         msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
-    //     });
-    //     return;
-    // }
+    // Calcular la diferencia de tiempo en minutos
+    const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
+    const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60));
+    const horasCompletas = Math.floor(diferenciaMinutos / 60);
+    const minutosRestantes = diferenciaMinutos % 60;
 
-    // // Si es el mismo día, ajustamos la fecha de salida para evitar sumar días innecesarios
-    // if (esMismoDia) {
-    //     fechaSalidaConHora.setDate(fechaEntradaConHora.getDate());
-    // }
-
-    // Validar coherencia entre fechas
-        if (fechaSalidaConHora < fechaEntradaConHora) {
-            res.status(400).json({
-                msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
-            });
-            return;
-        }
-
-        // Calcular la diferencia de tiempo
-        const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
-        if (diferenciaMs < 0) {
-            res.status(400).json({
-                msg: 'Error: La hora de salida no puede ser anterior a la hora de entrada.'
-            });
-            return;
-        }
-
-    // Calcular la diferencia de tiempo
-    // const diferenciaMs = fechaSalidaConHora - fechaEntradaConHora;
-   // Convertir la diferencia a minutos y horas
-const diferenciaMinutos = Math.ceil(diferenciaMs / (1000 * 60)); // Diferencia en minutos
-const horasCompletas = Math.floor(diferenciaMinutos / 60); // Horas completas
-const minutosRestantes = diferenciaMinutos % 60; // Minutos restantes
-
-console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaSalida, horasCompletas, minutosRestantes);
-
-
-    // Verificar el fraccionado y redondear el tiempo si es necesario
     const vehiculoInfo = await Vehiculo.findOne({ sucursal: sucursalId, vehiculo: tipo, clase: clase });
     const { fraccionado1, fraccionado2, tarifa, tolerancia } = vehiculoInfo;
 
-    let fraccionadoSuc = 0;
     const fraccionadoSucursal = await Sucursal.findOne({ _id: sucursalId });
-    if (fraccionadoSucursal.fraccionado) {
-        fraccionadoSuc = fraccionadoSucursal.fraccionado;
-    }
+    const fraccionadoSuc = fraccionadoSucursal.fraccionado || 0;
 
-    // Función para calcular el tiempo con fraccionado y tolerancia
+    // Función para calcular tiempo de cobro
     function calcularTiempoCobro(horas, minutos, tolerancia) {
         if (fraccionadoSuc > 0) {
             if (minutos < fraccionadoSuc && minutos < tolerancia) {
@@ -544,8 +510,8 @@ console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaS
 
     const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
 
-    // Función para calcular el costo basado en las horas pasadas
-    function calcularTarifaPorHoras(horas, tolerancia, fraccionado1, fraccionado2, tarifa) {
+    // Función para calcular tarifa
+    function calcularTarifaPorHoras(horas, tarifa) {
         let total = 0;
 
         if (horas > 24) {
@@ -553,34 +519,33 @@ console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaS
             total += diasCompletos * tarifa[2];
 
             const horasRestantes = horas % 24;
-
             if (horasRestantes <= fraccionado1) {
                 total += horasRestantes * tarifa[0];
             } else if (horasRestantes <= fraccionado2) {
-                total += tarifa[1]*horasRestantes;
+                total += tarifa[1] * horasRestantes;
             } else {
-                total += tarifa[2]*horasRestantes;
+                total += tarifa[2] * horasRestantes;
             }
-            console.log("tarifa", diasCompletos, total, horasRestantes, tarifa[0], tarifa[1], tarifa[2]);
         } else {
             if (horas <= 1) {
-                total = tarifa[0]*horas;
+                total = tarifa[0] * horas;
             } else if (horas <= fraccionado1) {
-                total = horas * tarifa[0];
+                total = tarifa[0] * horas;
             } else if (horas <= fraccionado2) {
-                total = tarifa[1]*horas;
+                total = tarifa[1] * horas;
             } else {
-                total = tarifa[2]*horas;
+                total = tarifa[2] * horas;
             }
         }
 
         return total;
     }
-    console.log("dataos tarifa",tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa )
-    const total = calcularTarifaPorHoras(tiempoRedondeado, tolerancia, fraccionado1, fraccionado2, tarifa);
 
+    const total = calcularTarifaPorHoras(tiempoRedondeado, tarifa);
+
+    // Actualizar y guardar la salida
     try {
-        entrada.imgSalida = imgSalidaUrl;
+        entrada.imgSalida = imgSalida || 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
         entrada.horaSalida = horaSalida;
         entrada.fechaSalida = fechaSalida;
         entrada.tiempo = tiempoRedondeado;
@@ -592,9 +557,7 @@ console.log("datos", fechaEntradaConHora, fechaSalidaConHora, horaEntrada, horaS
         res.status(200).json(entrada);
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            msg: 'Hable con el administrador'
-        });
+        res.status(500).json({ msg: 'Hable con el administrador' });
     }
 };
 
