@@ -273,8 +273,6 @@ const crearReserva = async(req, res) => {
     EntradaString = formatDate(horaIngreso)
     SalidaString = formatDate(horaEgreso)
 
-    
-
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
     if(!usuarioAdmin){
