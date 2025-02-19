@@ -424,32 +424,24 @@ const SalidaAuto = async (req, res) => {
 
     if (!mercadoPago) mercadoPago = false;
 
-    const options = {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    };
+    const fechaSalida = new Date(); // Hora actual en UTC
+    horaSalida = fechaSalida.toISOString().substr(11, 5); // Formato "HH:mm" en UTC
 
-    // Determinar las fechas y horas relevantes
-    let fechaEntradaConHora, fechaSalidaConHora;
-    const fechaSalida = new Date();
-    horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
-
+    let fechaEntradaConHora;
     if (entrada.tipoIngreso && entrada.tipoIngreso === 'Reserva') {
-        // Para reservas, usar la fecha y hora de egreso como base
-        const fechaEgreso = entrada.fechaEgreso;
-        const horaEgreso = entrada.horaEgreso.toLocaleTimeString('es-AR', options);
+        // Para reservas, usar fecha y hora de egreso en UTC
+        const fechaEgreso = new Date(entrada.fechaEgreso); // Ya en UTC
+        const [egresoHoras, egresoMinutos] = entrada.horaEgreso.split(':').map(Number);
 
-        const [egresoHoras, egresoMinutos] = horaEgreso.split(':').map(Number);
         fechaEntradaConHora = new Date(fechaEgreso);
-        fechaEntradaConHora.setHours(egresoHoras, egresoMinutos);
-        console.log('fechas', fechaSalida,fechaEntradaConHora )
+        fechaEntradaConHora.setUTCHours(egresoHoras, egresoMinutos);
+
+        console.log('Fechas comparadas (UTC):', fechaSalida, fechaEntradaConHora);
 
         if (fechaSalida <= fechaEntradaConHora) {
             // Si la salida es antes o igual al final de la reserva, no se cobra
             entrada.imgSalida = imgSalida || 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
-            entrada.horaSalida = horaSalida;
+            entrada.horaSalida = horaSalida; // Guardar en UTC
             entrada.fechaSalida = fechaSalida;
             entrada.tiempo = 0;
             entrada.finalizado = true;
@@ -460,15 +452,14 @@ const SalidaAuto = async (req, res) => {
         }
     } else {
         // Para ingreso por hora, usar la fecha y hora reales de entrada
-        const horaEntrada = entrada.horaEntrada;
-        const [entradaHoras, entradaMinutos] = horaEntrada.split(':').map(Number);
+        const [entradaHoras, entradaMinutos] = entrada.horaEntrada.split(':').map(Number);
         fechaEntradaConHora = new Date(entrada.fechaEntrada);
-        fechaEntradaConHora.setHours(entradaHoras, entradaMinutos);
+        fechaEntradaConHora.setUTCHours(entradaHoras, entradaMinutos);
     }
 
     const [salidaHoras, salidaMinutos] = horaSalida.split(':').map(Number);
-    fechaSalidaConHora = new Date(fechaSalida);
-    fechaSalidaConHora.setHours(salidaHoras, salidaMinutos);
+    const fechaSalidaConHora = new Date(fechaSalida);
+    fechaSalidaConHora.setUTCHours(salidaHoras, salidaMinutos);
 
     // Validar coherencia de fechas
     if (fechaSalidaConHora < fechaEntradaConHora) {
@@ -487,7 +478,6 @@ const SalidaAuto = async (req, res) => {
     const fraccionadoSucursal = await Sucursal.findOne({ _id: sucursalId });
     const fraccionadoSuc = fraccionadoSucursal.fraccionado || 0;
 
-    // Función para calcular tiempo de cobro
     function calcularTiempoCobro(horas, minutos, tolerancia) {
         if (fraccionadoSuc > 0) {
             if (minutos < fraccionadoSuc && minutos < tolerancia) {
@@ -510,7 +500,6 @@ const SalidaAuto = async (req, res) => {
 
     const tiempoRedondeado = calcularTiempoCobro(horasCompletas, minutosRestantes, tolerancia);
 
-    // Función para calcular tarifa
     function calcularTarifaPorHoras(horas, tarifa) {
         let total = 0;
 
@@ -543,10 +532,9 @@ const SalidaAuto = async (req, res) => {
 
     const total = calcularTarifaPorHoras(tiempoRedondeado, tarifa);
 
-    // Actualizar y guardar la salida
     try {
         entrada.imgSalida = imgSalida || 'https://res.cloudinary.com/dj3akdhb9/image/upload/v1724899221/samples/caravatar_rsuxln.png';
-        entrada.horaSalida = horaSalida;
+        entrada.horaSalida = horaSalida; // Guardar en UTC
         entrada.fechaSalida = fechaSalida;
         entrada.tiempo = tiempoRedondeado;
         entrada.finalizado = true;
