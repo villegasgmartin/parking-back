@@ -433,10 +433,11 @@ const SalidaAuto = async (req, res) => {
 
     // Determinar las fechas y horas relevantes
     let fechaEntradaConHora, fechaSalidaConHora;
-    const fechaSalida = new Date();
+    let fechaSalida = new Date();
     horaSalida = fechaSalida.toLocaleTimeString('es-AR', options);
 
     if (entrada.tipoIngreso && entrada.tipoIngreso === 'Reserva') {
+        fechaSalida = new Date(fechaSalida.toLocaleString('es-AR', options));
         // Para reservas, usar la fecha y hora de egreso como base
         const fechaEgreso = entrada.fechaEgreso;
         const horaEgreso = entrada.horaEgreso.toLocaleTimeString('es-AR', options);
