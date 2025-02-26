@@ -516,7 +516,7 @@ const SalidaAuto = async (req, res) => {
     function calcularTarifaPorHoras(horas, tarifa) {
         let total = 0;
 
-        if (horas > 24) {
+        if (horas >= 24) {
             const diasCompletos = Math.floor(horas / 24);
             total += diasCompletos * tarifa[2];
 
@@ -524,9 +524,9 @@ const SalidaAuto = async (req, res) => {
             if (horasRestantes <= fraccionado1) {
                 total += horasRestantes * tarifa[0];
             } else if (horasRestantes <= fraccionado2) {
-                total += tarifa[1] * horasRestantes;
+                total += tarifa[1];
             } else {
-                total += tarifa[2] * horasRestantes;
+                total += tarifa[2];
             }
         } else {
             if (horas <= 1) {
@@ -534,9 +534,9 @@ const SalidaAuto = async (req, res) => {
             } else if (horas <= fraccionado1) {
                 total = tarifa[0] * horas;
             } else if (horas <= fraccionado2) {
-                total = tarifa[1] * horas;
+                total = tarifa[1];
             } else {
-                total = tarifa[2] * horas;
+                total = tarifa[2];
             }
         }
 
@@ -544,6 +544,7 @@ const SalidaAuto = async (req, res) => {
     }
 
     const total = calcularTarifaPorHoras(tiempoRedondeado, tarifa);
+    console.log(horas, total,horasCompletas, minutosRestantes, tolerancia,tiempoRedondeado, tarifa)
 
     // Actualizar y guardar la salida
     try {
