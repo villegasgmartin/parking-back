@@ -544,7 +544,7 @@ const SalidaAuto = async (req, res) => {
     }
 
     const total = calcularTarifaPorHoras(tiempoRedondeado, tarifa);
-    console.log(total,horasCompletas, minutosRestantes, tolerancia,tiempoRedondeado)
+    console.log(total,horasCompletas, minutosRestantes, tolerancia,tiempoRedondeado, tarifa)
 
     // Actualizar y guardar la salida
     try {
