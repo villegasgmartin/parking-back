@@ -328,12 +328,13 @@ const obtenerReservasporUsuario = async (req, res) =>{
 //crear Abonado
 
 const crearAbonado = async(req, res) => {
-    let { empleado, sucursal , NumeroTramite, ...body} = req.body;
+    let { empleado, sucursal , ...body} = req.body;
     const sucursalId = req.query.sucursal;
-    NumeroTramite = uuidv4();
+    console.log("primer log", empleado, sucursal, sucursalId, body);
 
     const uid = req.uid
     const usuarioAdmin = await Admin.findById(uid) || await Empleado.findById(uid);
+    console.log("segundo log" , usuarioAdmin)
     if(!usuarioAdmin){
         return res.status(404).json({
             msg:'debe ser admin para crear abonado'
@@ -349,7 +350,7 @@ const crearAbonado = async(req, res) => {
         }
     }
 
-    const abonado = new Abonado({...body, empleados:uid, sucursal:sucursalId, NumeroTramite})
+    const abonado = new Abonado({...body, empleados:uid, sucursal:sucursalId})
 
     await abonado.save();
     
